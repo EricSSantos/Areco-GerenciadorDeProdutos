@@ -123,7 +123,7 @@ O **Frontend VCL** é a aplicação em **Delphi (VCL)** que consome a API do Bac
 **Requisitos**
 - Delphi (ex.: 10.3+)
 - Windows
-- API Backend rodando em `http://localhost:5289` (ou a URL configurada)
+- API Backend rodando em `http://localhost:5289` (ou outra URL configurada)
 
 ---
 
