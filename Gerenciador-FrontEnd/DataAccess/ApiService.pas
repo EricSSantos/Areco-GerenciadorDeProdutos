@@ -5,6 +5,7 @@ interface
 uses
   System.Classes,
   System.SysUtils,
+  System.JSON,
   IdHTTP;
 
 type
@@ -12,7 +13,18 @@ type
 
   THttpMethod = (hmGET, hmPOST, hmPUT, hmDELETE, hmDELETE_BATCH);
 
-  // Subclasse só pra permitir delete com body (batch)
+  TApiResponse = record
+    StatusCode: Integer;
+    Title     : string;
+    Data      : string;
+    Errors    : TArray<string>;
+    IsSuccess : Boolean;
+    class function Success(const AData: string; AStatusCode: Integer = 200;
+      const ATitle: string = ''): TApiResponse; static;
+    class function Fail(const AErrors: TArray<string>; AStatusCode: Integer;
+      const ATitle: string): TApiResponse; static;
+  end;
+
   TIdHTTPEx = class(TIdHTTP)
   public
     function DeleteWithBody(const AUrl: string; ASource: TStream): string;
@@ -20,181 +32,273 @@ type
 
   TApiService = class
   private
-    FParams: TStringList;
-    FHTTP  : TIdHTTPEx;
+    fParams: TStringList;
+    fHttp  : TIdHTTPEx;
     const BASE_URL = 'http://localhost:5289';
     function BuildURL(const AAction, ASuffix: string): string;
     procedure SetupHTTP;
+    class function Is2xx(const ACode: Integer): Boolean; static;
+    class function ToStringArray(const AJsonArray: TJSONArray): TArray<string>; static;
+    class function ExtractResponse(const ABody: string; const AFallbackStatus: Integer = 200): TApiResponse; static;
   public
     constructor Create;
     destructor Destroy; override;
-    property Params: TStringList read FParams;
+    property Params: TStringList read fParams;
     function ExecuteRequest(const AMethod: THttpMethod; const AAction: string;
-      ARequestBody: TStream; const ASuffix: string; out AMensagem: string): string; overload;
-    function ExecuteRequest(const AMethod: THttpMethod; const AAction: string;
-      ARequestBody: TStream; const ASuffix: string): string; overload;
-    function Get(const AAction, ASuffix: string; out AMensagem: string): string;
-    function Post(const AAction, ASuffix, ABodyJson: string; out AMensagem: string): string;
-    function Put(const AAction, ASuffix, ABodyJson: string; out AMensagem: string): string;
-    function Delete(const AAction, ASuffix: string; out AMensagem: string): string;
-    function DeleteBatch(const AAction, ASuffix, ABodyJson: string; out AMensagem: string): string;
+      ARequestBody: TStream; const ASuffix: string): TApiResponse;
+    function Get(const AAction, ASuffix: string): TApiResponse;
+    function Post(const AAction, ASuffix, ABodyJson: string): TApiResponse;
+    function Put(const AAction, ASuffix, ABodyJson: string): TApiResponse;
+    function Delete(const AAction, ASuffix: string): TApiResponse;
+    function DeleteBatch(const AAction, ASuffix, ABodyJson: string): TApiResponse;
   end;
 
 implementation
 
 uses
-  IdException;
+  IdException,
+  System.StrUtils;
 
-{ TIdHTTPEx }
+class function TApiResponse.Success(const AData: string; AStatusCode: Integer;
+  const ATitle: string): TApiResponse;
+begin
+  Result.StatusCode := AStatusCode;
+  Result.Title      := ATitle;
+  Result.Data       := AData;
+  Result.Errors     := [];
+  Result.IsSuccess  := True;
+end;
+
+class function TApiResponse.Fail(const AErrors: TArray<string>; AStatusCode: Integer;
+  const ATitle: string): TApiResponse;
+begin
+  Result.StatusCode := AStatusCode;
+  Result.Title      := ATitle;
+  Result.Data       := '';
+  Result.Errors     := AErrors;
+  Result.IsSuccess  := False;
+end;
 
 function TIdHTTPEx.DeleteWithBody(const AUrl: string; ASource: TStream): string;
 var
-  LResp: TStringStream;
+  resposta: TStringStream;
 begin
   if Assigned(ASource) then
     ASource.Position := 0;
-
-  LResp := TStringStream.Create('', TEncoding.UTF8);
+  resposta := TStringStream.Create('', TEncoding.UTF8);
   try
-    DoRequest('DELETE', AUrl, ASource, LResp, []);
-    Result := LResp.DataString;
+    DoRequest('DELETE', AUrl, ASource, resposta, []);
+    Result := resposta.DataString;
   finally
-    LResp.Free;
+    resposta.Free;
   end;
 end;
-
-{ TApiService }
 
 constructor TApiService.Create;
 begin
   inherited Create;
-  FParams := TStringList.Create;
-  FHTTP   := TIdHTTPEx.Create(nil);
+  fParams := TStringList.Create;
+  fHttp   := TIdHTTPEx.Create(nil);
   SetupHTTP;
 end;
 
 destructor TApiService.Destroy;
 begin
-  FHTTP.Free;
-  FParams.Free;
+  fHttp.Free;
+  fParams.Free;
   inherited;
 end;
 
 procedure TApiService.SetupHTTP;
 begin
-  FHTTP.Request.ContentType := 'application/json';
-  FHTTP.Request.Accept      := 'application/json';
-  FHTTP.HandleRedirects     := True;
+  fHttp.Request.ContentType   := 'application/json; charset=utf-8';
+  fHttp.Request.Accept        := 'application/json';
+  fHttp.Request.AcceptCharset := 'utf-8';
+  fHttp.HandleRedirects       := True;
 end;
 
 function TApiService.BuildURL(const AAction, ASuffix: string): string;
 var
-  Base, Url, Query: string;
+  baseUrl, url, query: string;
 begin
-  Base := BASE_URL.TrimRight(['/']) + AAction;
-
+  baseUrl := BASE_URL.TrimRight(['/']) + AAction;
   if ASuffix <> '' then
   begin
     if ASuffix[1] = '/' then
-      Url := Base + ASuffix
+      url := baseUrl + ASuffix
     else
-      Url := Base + '/' + ASuffix;
+      url := baseUrl + '/' + ASuffix;
   end
   else
-    Url := Base;
-
-  if FParams.Count > 0 then
+    url := baseUrl;
+  if fParams.Count > 0 then
   begin
-    FParams.Delimiter := '&';
-    Query := FParams.DelimitedText;
-    Url := Url + '?' + Query;
+    fParams.Delimiter := '&';
+    fParams.StrictDelimiter := True;
+    query := fParams.DelimitedText;
+    url := url + '?' + query;
   end;
-
-  Result := Url;
+  Result := url;
 end;
 
-function TApiService.ExecuteRequest(const AMethod: THttpMethod; const AAction:
-  string; ARequestBody: TStream; const ASuffix: string; out AMensagem: string): string;
-var
-  Url: string;
+class function TApiService.Is2xx(const ACode: Integer): Boolean;
 begin
-  AMensagem := '';
-  Url := BuildURL(AAction, ASuffix);
+  Result := (ACode >= 200) and (ACode <= 299);
+end;
 
+class function TApiService.ToStringArray(const AJsonArray: TJSONArray): TArray<string>;
+var
+  i: Integer;
+  item: TJSONValue;
+  listaTemp: TStringList;
+begin
+  if AJsonArray = nil then
+  begin
+    SetLength(Result, 0);
+    Exit;
+  end;
+  listaTemp := TStringList.Create;
+  try
+    for i := 0 to AJsonArray.Count - 1 do
+    begin
+      item := AJsonArray.Items[i];
+      if item is TJSONString then
+        listaTemp.Add(TJSONString(item).Value)
+      else
+        listaTemp.Add(item.ToJSON);
+    end;
+    SetLength(Result, listaTemp.Count);
+    for i := 0 to listaTemp.Count - 1 do
+      Result[i] := listaTemp[i];
+  finally
+    listaTemp.Free;
+  end;
+end;
+
+class function TApiService.ExtractResponse(const ABody: string; const AFallbackStatus: Integer): TApiResponse;
+var
+  json: TJSONValue;
+  objeto: TJSONObject;
+  codigo: Integer;
+  titulo: string;
+  dados, erros: TJSONValue;
+begin
+  if Trim(ABody) = '' then
+    Exit(TApiResponse.Fail(['Resposta vazia da API.'], AFallbackStatus, 'Falha ao realizar a operação.'));
+  json := TJSONObject.ParseJSONValue(ABody);
+  try
+    if not (json is TJSONObject) then
+      Exit(TApiResponse.Success(ABody, AFallbackStatus, ''));
+    objeto := TJSONObject(json);
+    if objeto.TryGetValue<Integer>('statusCode', codigo) then
+    begin
+      titulo := '';
+      objeto.TryGetValue<string>('title', titulo);
+      dados := objeto.Values['data'];
+      erros := objeto.Values['errors'];
+      if Is2xx(codigo) then
+      begin
+        if Assigned(dados) then
+          Exit(TApiResponse.Success(dados.ToJSON, codigo, titulo))
+        else
+          Exit(TApiResponse.Success('null', codigo, titulo));
+      end
+      else
+      begin
+        if erros is TJSONArray then
+          Exit(TApiResponse.Fail(ToStringArray(TJSONArray(erros)), codigo, titulo))
+        else
+          Exit(TApiResponse.Fail(['Falha ao realizar a operação.'], codigo, titulo));
+      end;
+    end;
+    dados := objeto.Values['data'];
+    if Assigned(dados) then
+      Exit(TApiResponse.Success(dados.ToJSON, AFallbackStatus, ''));
+    Exit(TApiResponse.Success(objeto.ToJSON, AFallbackStatus, ''));
+  finally
+    json.Free;
+  end;
+end;
+
+function TApiService.ExecuteRequest(const AMethod: THttpMethod; const AAction: string;
+  ARequestBody: TStream; const ASuffix: string): TApiResponse;
+var
+  url, conteudo: string;
+  codigo: Integer;
+begin
+  url := BuildURL(AAction, ASuffix);
   if Assigned(ARequestBody) then
     ARequestBody.Position := 0;
-
   try
     case AMethod of
-      hmGET         : Result := FHTTP.Get(Url);
-      hmPOST        : Result := FHTTP.Post(Url, ARequestBody);
-      hmPUT         : Result := FHTTP.Put(Url, ARequestBody);
-      hmDELETE      : Result := FHTTP.Delete(Url);
-      hmDELETE_BATCH: Result := FHTTP.DeleteWithBody(Url, ARequestBody);
+      hmGET          : conteudo := fHttp.Get(url);
+      hmPOST         : conteudo := fHttp.Post(url, ARequestBody);
+      hmPUT          : conteudo := fHttp.Put(url, ARequestBody);
+      hmDELETE       : conteudo := fHttp.Delete(url);
+      hmDELETE_BATCH : conteudo := fHttp.DeleteWithBody(url, ARequestBody);
     else
       raise EApiException.Create('Método HTTP não suportado.');
     end;
+    codigo := fHttp.ResponseCode;
+    if (codigo = 204) and (Trim(conteudo) = '') then
+      Exit(TApiResponse.Success('null', codigo, ''));
+    Result := ExtractResponse(conteudo, codigo);
   except
     on E: EIdHTTPProtocolException do
-      AMensagem := Format('Erro %d: %s', [E.ErrorCode, E.ErrorMessage]);
+    begin
+      if Trim(E.ErrorMessage) <> '' then
+        Result := ExtractResponse(E.ErrorMessage, E.ErrorCode)
+      else
+        Result := TApiResponse.Fail([E.Message], E.ErrorCode, 'Erro HTTP');
+    end;
     on E: Exception do
-      AMensagem := E.Message;
+      Result := TApiResponse.Fail([E.Message], 0, 'Erro de comunicação');
   end;
 end;
 
-function TApiService.ExecuteRequest(const AMethod: THttpMethod; const AAction:
-  string; ARequestBody: TStream; const ASuffix: string): string;
-var
-  Msg: string;
+function TApiService.Get(const AAction, ASuffix: string): TApiResponse;
 begin
-  Result := ExecuteRequest(AMethod, AAction, ARequestBody, ASuffix, Msg);
-  if Msg <> '' then
-    raise EApiException.Create(Msg);
+  Result := ExecuteRequest(hmGET, AAction, nil, ASuffix);
 end;
 
-function TApiService.Get(const AAction, ASuffix: string; out AMensagem: string): string;
-begin
-  Result := ExecuteRequest(hmGET, AAction, nil, ASuffix, AMensagem);
-end;
-
-function TApiService.Post(const AAction, ASuffix, ABodyJson: string; out AMensagem: string): string;
+function TApiService.Post(const AAction, ASuffix, ABodyJson: string): TApiResponse;
 var
-  S: TStringStream;
+  body: TStringStream;
 begin
-  S := TStringStream.Create(ABodyJson, TEncoding.UTF8);
+  body := TStringStream.Create(ABodyJson, TEncoding.UTF8);
   try
-    Result := ExecuteRequest(hmPOST, AAction, S, ASuffix, AMensagem);
+    Result := ExecuteRequest(hmPOST, AAction, body, ASuffix);
   finally
-    S.Free;
+    body.Free;
   end;
 end;
 
-function TApiService.Put(const AAction, ASuffix, ABodyJson: string; out AMensagem: string): string;
+function TApiService.Put(const AAction, ASuffix, ABodyJson: string): TApiResponse;
 var
-  S: TStringStream;
+  body: TStringStream;
 begin
-  S := TStringStream.Create(ABodyJson, TEncoding.UTF8);
+  body := TStringStream.Create(ABodyJson, TEncoding.UTF8);
   try
-    Result := ExecuteRequest(hmPUT, AAction, S, ASuffix, AMensagem);
+    Result := ExecuteRequest(hmPUT, AAction, body, ASuffix);
   finally
-    S.Free;
+    body.Free;
   end;
 end;
 
-function TApiService.Delete(const AAction, ASuffix: string; out AMensagem: string): string;
+function TApiService.Delete(const AAction, ASuffix: string): TApiResponse;
 begin
-  Result := ExecuteRequest(hmDELETE, AAction, nil, ASuffix, AMensagem);
+  Result := ExecuteRequest(hmDELETE, AAction, nil, ASuffix);
 end;
 
-function TApiService.DeleteBatch(const AAction, ASuffix, ABodyJson: string; out AMensagem: string): string;
+function TApiService.DeleteBatch(const AAction, ASuffix, ABodyJson: string): TApiResponse;
 var
-  S: TStringStream;
+  body: TStringStream;
 begin
-  S := TStringStream.Create(ABodyJson, TEncoding.UTF8);
+  body := TStringStream.Create(ABodyJson, TEncoding.UTF8);
   try
-    Result := ExecuteRequest(hmDELETE_BATCH, AAction, S, ASuffix, AMensagem);
+    Result := ExecuteRequest(hmDELETE_BATCH, AAction, body, ASuffix);
   finally
-    S.Free;
+    body.Free;
   end;
 end;
 

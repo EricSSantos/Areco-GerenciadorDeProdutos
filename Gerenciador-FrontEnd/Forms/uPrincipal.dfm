@@ -30,7 +30,6 @@ object frmPrincipal: TfrmPrincipal
       item
         Width = 200
       end>
-    ExplicitWidth = 624
   end
   object PageControl: TPageControl
     Left = 0
@@ -40,7 +39,6 @@ object frmPrincipal: TfrmPrincipal
     ActivePage = Home
     Align = alClient
     TabOrder = 1
-    ExplicitWidth = 624
     object Home: TTabSheet
       Caption = 'Bem-vindo'
     end

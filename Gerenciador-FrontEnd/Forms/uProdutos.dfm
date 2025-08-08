@@ -63,7 +63,6 @@ object frmProdutos: TfrmProdutos
         Font.Name = 'Segoe UI Light'
         Font.Style = []
         ParentFont = False
-        ExplicitLeft = 361
         ExplicitHeight = 28
       end
       object btnIncluir: TBitBtn
@@ -352,7 +351,6 @@ object frmProdutos: TfrmProdutos
         ShowHint = True
         TabOrder = 4
         OnClick = btnCancelarClick
-        ExplicitLeft = 455
       end
       object btnGravar: TBitBtn
         Left = 277
@@ -449,7 +447,6 @@ object frmProdutos: TfrmProdutos
         ShowHint = True
         TabOrder = 3
         OnClick = btnGravarClick
-        ExplicitLeft = 366
       end
       object btnBuscar: TBitBtn
         Left = 0
@@ -582,6 +579,8 @@ object frmProdutos: TfrmProdutos
   object cdsProdutos: TClientDataSet
     Aggregates = <>
     Params = <>
+    AfterPost = cdsProdutosAfterPost
+    AfterDelete = cdsProdutosAfterDelete
     Left = 488
     Top = 145
   end

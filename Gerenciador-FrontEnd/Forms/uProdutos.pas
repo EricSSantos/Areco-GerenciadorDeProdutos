@@ -1,15 +1,32 @@
-unit uProdutos;
+Ôªøunit uProdutos;
 
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages,
-  System.SysUtils, System.Variants, System.Classes, System.JSON,
-  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
-  Data.DB, Vcl.Grids, Vcl.DBGrids, Vcl.ExtCtrls, Vcl.Buttons,
-  System.ImageList, Vcl.ImgList, Vcl.StdCtrls, Vcl.WinXCtrls,
+  Winapi.Windows,
+  Winapi.Messages,
+  System.SysUtils,
+  System.Variants,
+  System.Classes,
+  System.JSON,
+  System.StrUtils,
+  Vcl.Graphics,
+  Vcl.Controls,
+  Vcl.Forms,
+  Vcl.Dialogs,
+  Data.DB,
+  Vcl.Grids,
+  Vcl.DBGrids,
+  Vcl.ExtCtrls,
+  Vcl.Buttons,
+  System.ImageList,
+  Vcl.ImgList,
+  Vcl.StdCtrls,
+  Vcl.WinXCtrls,
   Datasnap.DBClient,
-  ApiService, ProdutosController, Produto;
+  ApiService,
+  ProdutosController,
+  Produto;
 
 type
   TfrmProdutos = class(TForm)
@@ -35,14 +52,27 @@ type
     procedure DBGridDrawColumnCell(Sender: TObject; const Rect: TRect;
       DataCol: Integer; Column: TColumn; State: TGridDrawState);
     procedure DBGridKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure cdsProdutosAfterPost(DataSet: TDataSet);
+    procedure cdsProdutosAfterDelete(DataSet: TDataSet);
   private
-    FCarregado: Boolean;
+    FId: TField;
+    FCode, FStock: TIntegerField;
+    FName, FDesc: TStringField;
+    FPrice: TFloatField;
+    FCreated, FUpdated: TDateTimeField;
+
+    FSel: TBooleanField;
+    FSelectedCount: Integer;
+
     procedure ConfigurarColunas;
-    procedure MontarDataset;
-    procedure PreencherDataset(const JsonArray: TJSONArray);
-    function  RecordToProduto(const DS: TClientDataSet): TProduto;
-    function  RegistrosSelecionadosCount: Integer;
-    function  ColetarIdsSelecionados: TArray<string>;
+    procedure MontarDataSet;
+    procedure PreencherDataSet(const AArrayJson: TJSONArray);
+    function  DataSetParaProduto(const AConjuntoDados: TClientDataSet): TProduto;
+    procedure AtualizarUI(AEditMode: Boolean);
+    procedure LimparDados;
+    function  RegistrosSelecionados: Integer; inline;
+    function  ObterIds: TArray<string>;
+    function  Errors(const AErrors: TArray<string>): string;
   public
   end;
 
@@ -54,159 +84,235 @@ implementation
 {$R *.dfm}
 
 uses
-  DateTimeUtils, JsonUtils, FormatUtils, System.Generics.Collections;
+  DateTimeUtils,
+  JsonUtils,
+  FormatUtils,
+  System.Generics.Collections;
+
+const
+  CAMPO_SELECIONADO       = 'Selected';
+  COR_BG_SELECIONADO      = $E6D8AD;
+  COR_BG_LINHA_MODIFICADA = $B3DEF5;
 
 resourcestring
-  MSG_CARREGAR_FALHA    = 'N„o foi possÌvel carregar a lista de produtos.';
-  MSG_RESPOSTA_INVALIDA = 'O formato da resposta n„o foi reconhecido.';
-  MSG_SEM_SELECAO       = 'Selecione ao menos um item para exclus„o.';
-  MSG_CONF_EXCLUIR      = 'Confirma a exclus„o de %d item(s)? Esta aÁ„o n„o pode ser desfeita.';
-  MSG_EXCLUSAO_OK       = '%d item(s) excluÌdos com sucesso.';
-  MSG_EXCLUSAO_FALHA    = 'N„o foi possÌvel excluir os itens selecionados.';
-  MSG_SEM_ALTERACOES    = 'N„o h· alteraÁıes pendentes.';
-  MSG_SALVAR_OK         = 'AlteraÁıes realizadas com sucesso.';
-  MSG_SALVAR_PARCIAL    = 'Falha ao realizar algumas alteraÁıes. Revise os itens destacados.';
-  MSG_ATUALIZAR_FALHA   = 'N„o foi possÌvel atualizar o produto %s.' + sLineBreak + 'Detalhes: %s';
-  MSG_CONF_DESCARTAR    = 'Deseja, descartar alteraÁıes realizadas?';
-  MSG_OPERACAO_FALHA    = 'N„o foi possÌvel concluir a operaÁ„o.';
+  MSG_CARREGAR_FALHA    = 'N√£o foi poss√≠vel carregar a lista de produtos.';
+  MSG_RESPOSTA_INVALIDA = 'O formato da resposta n√£o foi reconhecido.';
+  MSG_SEM_SELECAO       = 'Selecione ao menos um item para exclus√£o.';
+  MSG_CONF_EXCLUIR      = 'Confirma a exclus√£o de %d item(s)? Esta a√ß√£o n√£o pode ser desfeita.';
+  MSG_EXCLUSAO_OK       = '%d item(s) exclu√≠dos com sucesso.';
+  MSG_EXCLUSAO_FALHA    = 'N√£o foi poss√≠vel excluir os itens selecionados.';
+  MSG_SEM_ALTERACOES    = 'N√£o h√° altera√ß√µes pendentes.';
+  MSG_SALVAR_OK         = 'Altera√ß√µes realizadas com sucesso.';
+  MSG_ATUALIZAR_FALHA   = 'N√£o foi poss√≠vel atualizar o produto %s.' + sLineBreak + 'Detalhes: %s';
+  MSG_CONF_DESCARTAR    = 'Deseja descartar as altera√ß√µes realizadas?';
+  MSG_OPERACAO_FALHA    = 'N√£o foi poss√≠vel concluir a opera√ß√£o.';
 
 procedure TfrmProdutos.FormCreate(Sender: TObject);
 begin
-  MontarDataset;
+  MontarDataSet;
   ConfigurarColunas;
-  dsProdutos.DataSet := cdsProdutos;
+  DBGrid.DoubleBuffered := True;
+  FSelectedCount := 0;
+  AtualizarUI(False);
+end;
 
-  DBGrid.Options := (DBGrid.Options
-    + [dgEditing, dgTitles, dgColLines, dgRowLines]) - [dgIndicator];
+procedure TfrmProdutos.AtualizarUI(AEditMode: Boolean);
+var
+  temDados, temSelecao, temEdicoes, emEdicao: Boolean;
+  procedure ResetUI;
+  begin
+    btnBuscar.Enabled   := False;
+    btnIncluir.Enabled  := False;
+    btnExcluir.Enabled  := False;
+    btnCancelar.Enabled := False;
+    btnGravar.Enabled   := False;
+    DBGrid.Enabled      := False;
+  end;
+begin
+  ResetUI;
+  if not AEditMode then
+  begin
+    btnBuscar.Enabled := True;
+    Exit;
+  end;
 
-  DBGrid.Enabled      := False;
-  btnIncluir.Enabled  := False;
-  btnGravar.Enabled   := False;
-  btnCancelar.Enabled := False;
-  btnExcluir.Enabled  := False;
-  cdsProdutos.LogChanges := True;
+  emEdicao  := cdsProdutos.Active and (cdsProdutos.State in dsEditModes);
+  temDados  := cdsProdutos.Active and (cdsProdutos.RecordCount > 0);
+
+  if emEdicao then
+    temSelecao := False
+  else
+    temSelecao := RegistrosSelecionados > 0;
+
+  temEdicoes := cdsProdutos.Active and
+                (cdsProdutos.UpdatesPending or cdsProdutos.Modified);
+
+  DBGrid.Enabled      := True;
+  btnIncluir.Enabled  := True;
+  btnCancelar.Enabled := True;
+  btnExcluir.Enabled  := not emEdicao and temSelecao;
+  btnGravar.Enabled   := temDados and temEdicoes and not temSelecao;
+end;
+
+procedure TfrmProdutos.LimparDados;
+begin
+  if cdsProdutos.Active then
+  begin
+    if (cdsProdutos.State in dsEditModes) then
+      cdsProdutos.Cancel;
+    if cdsProdutos.UpdatesPending then
+      cdsProdutos.CancelUpdates;
+    cdsProdutos.EmptyDataSet;
+  end;
+  FSelectedCount := 0;
 end;
 
 procedure TfrmProdutos.btnBuscarClick(Sender: TObject);
 var
-  Api : TApiService;
-  Ctrl: TProdutosController;
-  Msg, Resp: string;
-  Root: TJSONValue;
-  Arr: TJSONArray;
+  service: TApiService;
+  controller: TProdutosController;
+  resposta: TApiResponse;
+  json: TJSONValue;
+  arrayItens: TJSONArray;
+  detalhesErro: string;
 begin
+  Screen.Cursor := crHourGlass;
   cdsProdutos.DisableControls;
+  cdsProdutos.LogChanges := False;
   try
     cdsProdutos.EmptyDataSet;
-    Api  := TApiService.Create;
-    Ctrl := TProdutosController.Create(Api);
+    FSelectedCount := 0;
+
+    service := TApiService.Create;
+    controller := TProdutosController.Create(service);
     try
-      Resp := Ctrl.GetAll(Msg);
-      if Msg <> '' then
+      resposta := controller.GetAll;
+      if not resposta.IsSuccess then
       begin
-        MessageDlg(MSG_CARREGAR_FALHA + sLineBreak + 'Detalhes: ' + Msg, mtError, [mbOK], 0);
+        detalhesErro := Errors(resposta.Errors);
+        if detalhesErro <> '' then
+          MessageDlg(MSG_CARREGAR_FALHA + sLineBreak + 'Detalhes: ' + detalhesErro, mtError, [mbOK], 0)
+        else if resposta.Title <> '' then
+          MessageDlg(MSG_CARREGAR_FALHA + sLineBreak + 'Detalhes: ' + resposta.Title, mtError, [mbOK], 0)
+        else
+          MessageDlg(MSG_CARREGAR_FALHA, mtError, [mbOK], 0);
         Exit;
       end;
 
-      Root := JsonParse(Resp);
+      json := JsonParse(resposta.Data);
       try
-        Arr := nil;
+        arrayItens := nil;
+        if json is TJSONArray then
+          arrayItens := TJSONArray(json)
+        else if json is TJSONObject then
+          arrayItens := JsonGetArray(TJSONObject(json), 'items');
 
-        if Root is TJSONArray then
-          Arr := TJSONArray(Root)
-        else if Root is TJSONObject then
-          Arr := JsonGetArray(TJSONObject(Root), 'data');
-
-        if Assigned(Arr) then
+        if not Assigned(arrayItens) then
         begin
-          PreencherDataset(Arr);
-          if cdsProdutos.Active then
-            cdsProdutos.MergeChangeLog;
-          DBGrid.Enabled      := True;
-          btnIncluir.Enabled  := True;
-          btnGravar.Enabled   := True;
-          btnCancelar.Enabled := True;
-          btnExcluir.Enabled  := True;
-        end
-        else
           MessageDlg(MSG_RESPOSTA_INVALIDA, mtWarning, [mbOK], 0);
+          Exit;
+        end;
+
+        PreencherDataSet(arrayItens);
+        cdsProdutos.IndexFieldNames := 'Code';
       finally
-        Root.Free;
+        json.Free;
       end;
+
+      AtualizarUI(True);
+
     finally
-      Ctrl.Free;
-      Api.Free;
+      controller.Free;
+      service.Free;
     end;
+
   finally
+    cdsProdutos.LogChanges := True;
     cdsProdutos.EnableControls;
+    Screen.Cursor := crDefault;
   end;
 end;
 
 procedure TfrmProdutos.btnExcluirClick(Sender: TObject);
 var
-  Api  : TApiService;
-  Ctrl : TProdutosController;
-  Msg  : string;
-  Ids  : TArray<string>;
-  Deleted: Integer;
+  service: TApiService;
+  controller: TProdutosController;
+  resposta: TApiResponse;
+  idsSelecionados: TArray<string>;
+  quantidadeExcluida: Integer;
+  detalhesErro: string;
 begin
-  Ids := ColetarIdsSelecionados;
-  if Length(Ids) = 0 then
+  idsSelecionados := ObterIds;
+  if Length(idsSelecionados) = 0 then
   begin
     MessageDlg(MSG_SEM_SELECAO, mtInformation, [mbOK], 0);
     Exit;
   end;
 
-  if MessageDlg(Format(MSG_CONF_EXCLUIR, [Length(Ids)]),
-    mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
+  if MessageDlg(Format(MSG_CONF_EXCLUIR, [Length(idsSelecionados)]), mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
     Exit;
 
-  Api  := TApiService.Create;
-  Ctrl := TProdutosController.Create(Api);
+  Screen.Cursor := crHourGlass;
   try
-    Ctrl.DeleteBatch(Ids, Msg);
-    if Msg <> '' then
-    begin
-      MessageDlg(MSG_EXCLUSAO_FALHA + sLineBreak + 'Detalhes: ' + Msg, mtError, [mbOK], 0);
-      Exit;
-    end;
-
-    Deleted := 0;
-    cdsProdutos.DisableControls;
+    service := TApiService.Create;
+    controller := TProdutosController.Create(service);
     try
-      cdsProdutos.Last;
-      while not cdsProdutos.BOF do
+      resposta := controller.DeleteBatch(idsSelecionados);
+
+      if not resposta.IsSuccess then
       begin
-        if cdsProdutos.FieldByName('Selected').AsBoolean then
-        begin
-          cdsProdutos.Delete;
-          Inc(Deleted);
-        end
-        else
-          cdsProdutos.Prior;
+        detalhesErro := Errors(resposta.Errors);
+        if detalhesErro = '' then
+          detalhesErro := resposta.Title;
+        if detalhesErro = '' then
+          detalhesErro := MSG_EXCLUSAO_FALHA;
+
+        MessageDlg(detalhesErro, mtError, [mbOK], 0);
+        Exit;
       end;
+
+      quantidadeExcluida := 0;
+      cdsProdutos.DisableControls;
+      try
+        cdsProdutos.First;
+        while not cdsProdutos.Eof do
+        begin
+          if FSel.AsBoolean then
+          begin
+            cdsProdutos.Delete;
+            Inc(quantidadeExcluida);
+            Dec(FSelectedCount);
+          end
+          else
+            cdsProdutos.Next;
+        end;
+      finally
+        cdsProdutos.EnableControls;
+      end;
+
+      if cdsProdutos.Active and (cdsProdutos.ChangeCount > 0) then
+        cdsProdutos.MergeChangeLog;
+
+      MessageDlg(Format(MSG_EXCLUSAO_OK, [quantidadeExcluida]), mtInformation, [mbOK], 0);
+      AtualizarUI(True);
     finally
-      cdsProdutos.EnableControls;
+      controller.Free;
+      service.Free;
     end;
-
-    if cdsProdutos.Active and (cdsProdutos.ChangeCount > 0) then
-      cdsProdutos.MergeChangeLog;
-
-    MessageDlg(Format(MSG_EXCLUSAO_OK, [Deleted]), mtInformation, [mbOK], 0);
   finally
-    Ctrl.Free;
-    Api.Free;
+    Screen.Cursor := crDefault;
   end;
 end;
 
 procedure TfrmProdutos.btnGravarClick(Sender: TObject);
 var
-  Api  : TApiService;
-  Ctrl : TProdutosController;
-  Msg  : string;
-  Bmk  : TBookmark;
-  HadError: Boolean;
-  Prod : TProduto;
+  service: TApiService;
+  controller: TProdutosController;
+  resposta: TApiResponse;
+  houveErro: Boolean;
+  detalhes, codigoStr: string;
+  dataSet: TClientDataSet;
+  produto: TProduto;
 begin
   if cdsProdutos.State in dsEditModes then
     cdsProdutos.Post;
@@ -217,67 +323,259 @@ begin
     Exit;
   end;
 
-  Api  := TApiService.Create;
-  Ctrl := TProdutosController.Create(Api);
-  Bmk := cdsProdutos.GetBookmark;
-  HadError := False;
+  service := TApiService.Create;
+  controller := TProdutosController.Create(service);
+  houveErro := False;
+  dataSet := TClientDataSet.Create(nil);
   try
-    cdsProdutos.DisableControls;
-    try
-      cdsProdutos.First;
-      while not cdsProdutos.Eof do
+    dataSet.Data := cdsProdutos.Delta;
+    dataSet.First;
+    while not dataSet.Eof do
+    begin
+      if dataSet.UpdateStatus = usModified then
       begin
-        if cdsProdutos.UpdateStatus = usModified then
-        begin
-          Prod := RecordToProduto(cdsProdutos);
-          try
-            Ctrl.Put(Prod, Msg);
-            if Msg <> '' then
-            begin
-              HadError := True;
-              MessageDlg(Format(MSG_ATUALIZAR_FALHA,
-                [cdsProdutos.FieldByName('Code').AsString, Msg]),
-                mtError, [mbOK], 0);
-            end;
-          finally
-            Prod.Free;
+        produto := DataSetParaProduto(dataSet);
+        try
+          resposta := controller.Put(produto);
+          if not resposta.IsSuccess then
+          begin
+            houveErro := True;
+            detalhes := Errors(resposta.Errors);
+            if detalhes = '' then
+              detalhes := resposta.Title;
+
+            if dataSet.FindField('Code') <> nil then
+              codigoStr := dataSet.FieldByName('Code').AsString
+            else
+              codigoStr := '(s/ c√≥digo)';
+
+            MessageDlg(Format(MSG_ATUALIZAR_FALHA, [codigoStr,
+                 IfThen(detalhes <> '', detalhes, MSG_OPERACAO_FALHA)]), mtError, [mbOK], 0);
           end;
+        finally
+          produto.Free;
         end;
-        cdsProdutos.Next;
       end;
-    finally
-      cdsProdutos.EnableControls;
+      dataSet.Next;
     end;
 
-    if not HadError then
+    if not houveErro then
     begin
       cdsProdutos.MergeChangeLog;
       MessageDlg(MSG_SALVAR_OK, mtInformation, [mbOK], 0);
-    end
-    else
-      MessageDlg(MSG_SALVAR_PARCIAL, mtWarning, [mbOK], 0);
+    end;
+
   finally
-    if Bmk <> nil then cdsProdutos.GotoBookmark(Bmk);
-    cdsProdutos.FreeBookmark(Bmk);
-    Ctrl.Free;
-    Api.Free;
+    dataSet.Free;
+    controller.Free;
+    service.Free;
   end;
 end;
 
 procedure TfrmProdutos.btnCancelarClick(Sender: TObject);
 begin
-  if not ((cdsProdutos.State in dsEditModes) or cdsProdutos.UpdatesPending) then
+  if cdsProdutos.Active and (cdsProdutos.UpdatesPending or (cdsProdutos.State in dsEditModes)) then
   begin
-    MessageDlg(MSG_SEM_ALTERACOES, mtInformation, [mbOK], 0);
-    Exit;
-  end;
+    if MessageDlg(MSG_CONF_DESCARTAR, mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
+      Exit;
 
-  if MessageDlg(MSG_CONF_DESCARTAR, mtConfirmation, [mbYes, mbNo], 0) = mrYes then
-  begin
     if cdsProdutos.State in dsEditModes then
       cdsProdutos.Cancel;
-    cdsProdutos.CancelUpdates;
+
+    if cdsProdutos.UpdatesPending then
+      cdsProdutos.CancelUpdates;
   end;
+
+  LimparDados;
+  AtualizarUI(False);
+end;
+
+procedure TfrmProdutos.ConfigurarColunas;
+var
+  coluna: TColumn;
+begin
+  DBGrid.Columns.Clear;
+
+  // Checkbox
+  coluna := DBGrid.Columns.Add;
+  coluna.FieldName       := 'Selected';
+  coluna.Title.Caption   := '';
+  coluna.Width           := 28;
+  coluna.ReadOnly        := True;
+  coluna.Title.Alignment := taCenter;
+  coluna.Alignment       := taCenter;
+
+  // C√≥digo
+  coluna := DBGrid.Columns.Add;
+  coluna.FieldName       := 'Code';
+  coluna.Title.Caption   := 'C√≥digo';
+  coluna.Width           := 60;
+  coluna.ReadOnly        := True;
+  coluna.Alignment       := taCenter;
+  coluna.Title.Alignment := taCenter;
+
+  // Nome
+  coluna := DBGrid.Columns.Add;
+  coluna.FieldName       := 'Name';
+  coluna.Title.Caption   := 'Nome';
+  coluna.Width           := 220;
+
+  // Descri√ß√£o
+  coluna := DBGrid.Columns.Add;
+  coluna.FieldName       := 'Description';
+  coluna.Title.Caption   := 'Descri√ß√£o';
+  coluna.Width           := 280;
+
+  // Pre√ßo
+  coluna := DBGrid.Columns.Add;
+  coluna.FieldName       := 'Price';
+  coluna.Title.Caption   := 'Pre√ßo (R$)';
+  coluna.Width           := 60;
+  coluna.Alignment       := taRightJustify;
+  coluna.Title.Alignment := taRightJustify;
+
+  // Estoque
+  coluna := DBGrid.Columns.Add;
+  coluna.FieldName       := 'Stock';
+  coluna.Title.Caption   := 'Estoque';
+  coluna.Width           := 60;
+  coluna.Alignment       := taRightJustify;
+  coluna.Title.Alignment := taRightJustify;
+
+  // Criado em
+  coluna := DBGrid.Columns.Add;
+  coluna.FieldName       := 'CreatedAt';
+  coluna.Title.Caption   := 'Criado em';
+  coluna.Width           := 140;
+  coluna.ReadOnly        := True;
+
+  // Atualizado em
+  coluna := DBGrid.Columns.Add;
+  coluna.FieldName       := 'UpdatedAt';
+  coluna.Title.Caption   := 'Atualizado em';
+  coluna.Width           := 140;
+  coluna.ReadOnly        := True;
+end;
+
+procedure TfrmProdutos.MontarDataSet;
+var
+  campoSelecao: TBooleanField;
+begin
+  cdsProdutos.Close;
+  cdsProdutos.FieldDefs.Clear;
+  cdsProdutos.FieldDefs.Add('Selected',    ftBoolean);
+  cdsProdutos.FieldDefs.Add('Id',          ftString, 36);
+  cdsProdutos.FieldDefs.Add('Code',        ftInteger);
+  cdsProdutos.FieldDefs.Add('Name',        ftString, 255);
+  cdsProdutos.FieldDefs.Add('Description', ftString, 500);
+  cdsProdutos.FieldDefs.Add('Price',       ftFloat);
+  cdsProdutos.FieldDefs.Add('Stock',       ftInteger);
+  cdsProdutos.FieldDefs.Add('CreatedAt',   ftDateTime);
+  cdsProdutos.FieldDefs.Add('UpdatedAt',   ftDateTime);
+  cdsProdutos.CreateDataSet;
+  campoSelecao := TBooleanField(cdsProdutos.FieldByName('Selected'));
+  campoSelecao.DisplayValues := ';';
+
+  FSel     := TBooleanField(cdsProdutos.FieldByName('Selected'));
+  FId      := cdsProdutos.FieldByName('Id');
+  FCode    := TIntegerField(cdsProdutos.FieldByName('Code'));
+  FName    := TStringField(cdsProdutos.FieldByName('Name'));
+  FDesc    := TStringField(cdsProdutos.FieldByName('Description'));
+  FPrice   := TFloatField(cdsProdutos.FieldByName('Price'));
+  FStock   := TIntegerField(cdsProdutos.FieldByName('Stock'));
+  FCreated := TDateTimeField(cdsProdutos.FieldByName('CreatedAt'));
+  FUpdated := TDateTimeField(cdsProdutos.FieldByName('UpdatedAt'));
+  FSel.DisplayValues := ';';
+end;
+
+procedure TfrmProdutos.PreencherDataSet(const AArrayJson: TJSONArray);
+var
+  i: Integer;
+  texto: string;
+  objeto: TJSONObject;
+  data: TDateTime;
+begin
+  for i := 0 to AArrayJson.Count - 1 do
+  begin
+    if not (AArrayJson.Items[i] is TJSONObject) then
+      Continue;
+
+    objeto := TJSONObject(AArrayJson.Items[i]);
+
+    cdsProdutos.Append;
+    FSel.AsBoolean   := False;
+    FId.AsString     := JsonGetStr(objeto, 'id');
+    FCode.AsInteger  := JsonGetInt(objeto, 'code');
+    FName.AsString   := JsonGetStr(objeto, 'name');
+    FDesc.AsString   := JsonGetStr(objeto, 'description');
+    FPrice.AsFloat   := JsonGetFloat(objeto, 'price');
+    FStock.AsInteger := JsonGetInt(objeto, 'stock');
+
+    texto := JsonGetStr(objeto, 'createdAt');
+    if ParseIsO8601(texto, data) then FCreated.AsDateTime := data;
+
+    texto := JsonGetStr(objeto, 'updatedAt');
+    if ParseIsO8601(texto, data) then FUpdated.AsDateTime := data;
+
+    cdsProdutos.Post;
+  end;
+end;
+
+function TfrmProdutos.DataSetParaProduto(const AConjuntoDados: TClientDataSet): TProduto;
+begin
+  Result := TProduto.Create;
+  Result.Id          := AConjuntoDados.FieldByName('Id').AsString;
+  Result.Code        := AConjuntoDados.FieldByName('Code').AsInteger;
+  Result.Name        := AConjuntoDados.FieldByName('Name').AsString;
+  Result.Description := AConjuntoDados.FieldByName('Description').AsString;
+  Result.Price       := AConjuntoDados.FieldByName('Price').AsFloat;
+  Result.Stock       := AConjuntoDados.FieldByName('Stock').AsInteger;
+  Result.CreatedAt   := AConjuntoDados.FieldByName('CreatedAt').AsDateTime;
+  if not AConjuntoDados.FieldByName('UpdatedAt').IsNull then
+    Result.UpdatedAt := AConjuntoDados.FieldByName('UpdatedAt').AsDateTime;
+end;
+
+function TfrmProdutos.RegistrosSelecionados: Integer;
+begin
+  Result := FSelectedCount;
+end;
+
+function TfrmProdutos.ObterIds: TArray<string>;
+var
+  lista: TList<string>;
+  marcador: TBookmark;
+begin
+  SetLength(Result, 0);
+  if not cdsProdutos.Active then Exit;
+
+  lista := TList<string>.Create;
+  marcador := cdsProdutos.GetBookmark;
+  try
+    cdsProdutos.DisableControls;
+    cdsProdutos.First;
+    while not cdsProdutos.Eof do
+    begin
+      if FSel.AsBoolean then
+        lista.Add(FId.AsString);
+      cdsProdutos.Next;
+    end;
+    Result := lista.ToArray;
+  finally
+    if marcador <> nil then cdsProdutos.GotoBookmark(marcador);
+    cdsProdutos.FreeBookmark(marcador);
+    cdsProdutos.EnableControls;
+    lista.Free;
+  end;
+end;
+
+function TfrmProdutos.Errors(const AErrors: TArray<string>): string;
+var
+  s: string;
+begin
+  Result := '';
+  for s in AErrors do
+    if s.Trim <> '' then
+      Result := Result + IfThen(Result <> '', sLineBreak) + s.Trim;
 end;
 
 procedure TfrmProdutos.DBGridKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -294,37 +592,38 @@ end;
 
 procedure TfrmProdutos.DBGridCellClick(Column: TColumn);
 var
-  OldLog: Boolean;
+  novo: Boolean;
+  prevLog: Boolean;
 begin
-  if (Column.FieldName = 'Selected') and not cdsProdutos.IsEmpty then
+  if (Column.FieldName = CAMPO_SELECIONADO) and not cdsProdutos.IsEmpty then
   begin
-    OldLog := cdsProdutos.LogChanges;
+    prevLog := cdsProdutos.LogChanges;
     cdsProdutos.DisableControls;
     try
       cdsProdutos.LogChanges := False;
       cdsProdutos.Edit;
-      cdsProdutos.FieldByName('Selected').AsBoolean :=
-        not cdsProdutos.FieldByName('Selected').AsBoolean;
+      novo := not FSel.AsBoolean;
+      FSel.AsBoolean := novo;
       cdsProdutos.Post;
     finally
-      cdsProdutos.LogChanges := OldLog;
+      cdsProdutos.LogChanges := prevLog;
       cdsProdutos.EnableControls;
     end;
 
+    if novo then Inc(FSelectedCount) else Dec(FSelectedCount);
+    AtualizarUI(True);
     DBGrid.Invalidate;
   end;
 end;
 
 procedure TfrmProdutos.DBGridDrawColumnCell(Sender: TObject; const Rect: TRect;
   DataCol: Integer; Column: TColumn; State: TGridDrawState);
-const
-  COLOR_SELECTED = $E6D8AD;
-  COLOR_MODIFIED = $B3DEF5;
 var
-  R: TRect;
-  Flags: UINT;
-  IsChecked, IsModified: Boolean;
-  Bg: TColor;
+  retanguloCheck: TRect;
+  desenhoCheck: UINT;
+  estaSelecionado: Boolean;
+  linhaModificada: Boolean;
+  corFundo: TColor;
 begin
   if not cdsProdutos.Active then
   begin
@@ -332,212 +631,44 @@ begin
     Exit;
   end;
 
-  IsChecked  := cdsProdutos.FieldByName('Selected').AsBoolean;
-  IsModified := (cdsProdutos.UpdateStatus = usModified);
+  estaSelecionado := FSel.AsBoolean;
+  linhaModificada := (cdsProdutos.UpdateStatus = usModified);
 
-  if IsChecked then
-    Bg := COLOR_SELECTED
-  else if IsModified and (Column.FieldName <> 'Selected') then
-    Bg := COLOR_MODIFIED
+  if estaSelecionado then
+    corFundo := COR_BG_SELECIONADO
+  else if linhaModificada and (Column.FieldName <> CAMPO_SELECIONADO) then
+    corFundo := COR_BG_LINHA_MODIFICADA
   else
-    Bg := clWindow;
+    corFundo := DBGrid.Color;
 
-  DBGrid.Canvas.Brush.Color := Bg;
+  DBGrid.Canvas.Brush.Color := corFundo;
   DBGrid.Canvas.FillRect(Rect);
 
-  if Column.FieldName = 'Selected' then
+  if SameText(Column.FieldName, CAMPO_SELECIONADO) then
   begin
-    R := Rect;
-    InflateRect(R, -6, -4);
-    Flags := DFCS_BUTTONCHECK;
-    if IsChecked then
-      Flags := Flags or DFCS_CHECKED;
-    DrawFrameControl(DBGrid.Canvas.Handle, R, DFC_BUTTON, Flags);
+    retanguloCheck := Rect;
+    InflateRect(retanguloCheck, -1, -1);
+    desenhoCheck := DFCS_BUTTONCHECK;
+    if estaSelecionado then
+      desenhoCheck := desenhoCheck or DFCS_CHECKED;
+
+    DrawFrameControl(DBGrid.Canvas.Handle, retanguloCheck, DFC_BUTTON, desenhoCheck);
     Exit;
   end;
 
   DBGrid.DefaultDrawColumnCell(Rect, DataCol, Column, State);
 end;
 
-procedure TfrmProdutos.ConfigurarColunas;
-var
-  Col: TColumn;
+procedure TfrmProdutos.cdsProdutosAfterPost(DataSet: TDataSet);
 begin
-  DBGrid.Columns.Clear;
-
-  Col := DBGrid.Columns.Add;
-  Col.FieldName := 'Selected';
-  Col.Title.Caption := '';
-  Col.Width := 28;
-  Col.ReadOnly := True;
-  Col.Title.Alignment := taCenter;
-
-  Col := DBGrid.Columns.Add;
-  Col.FieldName := 'Code';
-  Col.Title.Caption := 'CÛdigo';
-  Col.Width := 60;
-  Col.ReadOnly := True;
-  Col.Alignment := taCenter;
-  Col.Title.Alignment := taCenter;
-
-  Col := DBGrid.Columns.Add;
-  Col.FieldName := 'Name';
-  Col.Title.Caption := 'Nome';
-  Col.Width := 220;
-
-  Col := DBGrid.Columns.Add;
-  Col.FieldName := 'Description';
-  Col.Title.Caption := 'DescriÁ„o';
-  Col.Width := 280;
-
-  Col := DBGrid.Columns.Add;
-  Col.FieldName := 'Price';
-  Col.Title.Caption := 'PreÁo (R$)';
-  Col.Width := 60;
-  Col.Alignment := taRightJustify;
-  Col.Title.Alignment := taRightJustify;
-
-  Col := DBGrid.Columns.Add;
-  Col.FieldName := 'Stock';
-  Col.Title.Caption := 'Estoque';
-  Col.Width := 60;
-  Col.Alignment := taRightJustify;
-  Col.Title.Alignment := taRightJustify;
-
-  Col := DBGrid.Columns.Add;
-  Col.FieldName := 'CreatedAt';
-  Col.Title.Caption := 'Criado em';
-  Col.Width := 140;
-  Col.ReadOnly := True;
-
-  Col := DBGrid.Columns.Add;
-  Col.FieldName := 'UpdatedAt';
-  Col.Title.Caption := 'Atualizado em';
-  Col.Width := 140;
-  Col.ReadOnly := True;
+  AtualizarUI(True);
+  DBGrid.Repaint;
 end;
 
-procedure TfrmProdutos.MontarDataset;
+procedure TfrmProdutos.cdsProdutosAfterDelete(DataSet: TDataSet);
 begin
-  cdsProdutos.Close;
-  cdsProdutos.FieldDefs.Clear;
-  cdsProdutos.FieldDefs.Add('Selected',   ftBoolean);
-  cdsProdutos.FieldDefs.Add('Id',         ftString, 36);
-  cdsProdutos.FieldDefs.Add('Code',       ftInteger);
-  cdsProdutos.FieldDefs.Add('Name',       ftString, 255);
-  cdsProdutos.FieldDefs.Add('Description',ftString, 500);
-  cdsProdutos.FieldDefs.Add('Price',      ftFloat);
-  cdsProdutos.FieldDefs.Add('Stock',      ftInteger);
-  cdsProdutos.FieldDefs.Add('CreatedAt',  ftDateTime);
-  cdsProdutos.FieldDefs.Add('UpdatedAt',  ftDateTime);
-  cdsProdutos.CreateDataSet;
-end;
-
-procedure TfrmProdutos.PreencherDataset(const JsonArray: TJsONArray);
-var
-  i: integer;
-  s: string;
-  Obj: TJsONObject;
-  dt: TDateTime;
-begin
-  for i := 0 to JsonArray.Count - 1 do
-  begin
-    if not (JsonArray.items[i] is TJsONObject) then
-      Continue;
-
-    Obj := TJsONObject(JsonArray.items[i]);
-
-    cdsProdutos.Append;
-    cdsProdutos.FieldByName('selected').AsBoolean := False;
-
-    cdsProdutos.FieldByName('id').Asstring          := JsonGetstr(Obj, 'id');
-    cdsProdutos.FieldByName('Code').Asinteger       := JsonGetint(Obj, 'code');
-    cdsProdutos.FieldByName('Name').Asstring        := JsonGetstr(Obj, 'name');
-    cdsProdutos.FieldByName('Description').Asstring := JsonGetstr(Obj, 'description');
-    cdsProdutos.FieldByName('Price').AsFloat        := JsonGetFloat(Obj, 'price');
-    cdsProdutos.FieldByName('stock').Asinteger      := JsonGetint(Obj, 'stock');
-
-    s := JsonGetstr(Obj, 'createdAt');
-    if ParseisO8601(s, dt) then
-      cdsProdutos.FieldByName('CreatedAt').AsDateTime := dt;
-
-    s := JsonGetstr(Obj, 'updatedAt');
-    if ParseisO8601(s, dt) then
-      cdsProdutos.FieldByName('UpdatedAt').AsDateTime := dt;
-
-    cdsProdutos.Post;
-  end;
-
-  cdsProdutos.indexFieldNames := 'Code';
-end;
-
-function TfrmProdutos.RecordToProduto(const DS: TClientDataSet): TProduto;
-begin
-  Result := TProduto.Create;
-  Result.Id          := DS.FieldByName('Id').AsString;
-  Result.Code        := DS.FieldByName('Code').AsInteger;
-  Result.Name        := DS.FieldByName('Name').AsString;
-  Result.Description := DS.FieldByName('Description').AsString;
-  Result.Price       := DS.FieldByName('Price').AsFloat;
-  Result.Stock       := DS.FieldByName('Stock').AsInteger;
-  Result.CreatedAt   := DS.FieldByName('CreatedAt').AsDateTime;
-  if not DS.FieldByName('UpdatedAt').IsNull then
-    Result.UpdatedAt := DS.FieldByName('UpdatedAt').AsDateTime;
-end;
-
-function TfrmProdutos.RegistrosSelecionadosCount: Integer;
-var
-  Bmk: TBookmark;
-begin
-  Result := 0;
-  if not cdsProdutos.Active then Exit;
-
-  Bmk := cdsProdutos.GetBookmark;
-  try
-    cdsProdutos.DisableControls;
-    cdsProdutos.First;
-    while not cdsProdutos.Eof do
-    begin
-      if cdsProdutos.FieldByName('Selected').AsBoolean then
-        Inc(Result);
-
-      cdsProdutos.Next;
-    end;
-  finally
-    if Bmk <> nil then
-      cdsProdutos.GotoBookmark(Bmk);
-
-    cdsProdutos.FreeBookmark(Bmk);
-    cdsProdutos.EnableControls;
-  end;
-end;
-
-function TfrmProdutos.ColetarIdsSelecionados: TArray<string>;
-var
-  L: TList<string>;
-  Bmk: TBookmark;
-begin
-  SetLength(Result, 0);
-  if not cdsProdutos.Active then Exit;
-
-  L := TList<string>.Create;
-  Bmk := cdsProdutos.GetBookmark;
-  try
-    cdsProdutos.DisableControls;
-    cdsProdutos.First;
-    while not cdsProdutos.Eof do
-    begin
-      if cdsProdutos.FieldByName('Selected').AsBoolean then
-        L.Add(cdsProdutos.FieldByName('Id').AsString);
-      cdsProdutos.Next;
-    end;
-    Result := L.ToArray;
-  finally
-    if Bmk <> nil then cdsProdutos.GotoBookmark(Bmk);
-    cdsProdutos.FreeBookmark(Bmk);
-    cdsProdutos.EnableControls;
-    L.Free;
-  end;
+  AtualizarUI(True);
+  DBGrid.Repaint;
 end;
 
 end.

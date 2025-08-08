@@ -5,25 +5,27 @@ interface
 uses
   System.SysUtils;
 
-function MoneyBR(const Value: Double): string;
-function SafeStrToFloatInv(const S: string; out V: Double): Boolean;
+function MoneyBR(const AValue: Double): string;
+function SafeStrToFloatInv(const AValue: string; out AResult: Double): Boolean;
 
 implementation
 
-function MoneyBR(const Value: Double): string;
-var FS: TFormatSettings;
+function MoneyBR(const AValue: Double): string;
+var
+  formatSettings: TFormatSettings;
 begin
-  FS := TFormatSettings.Create('pt-BR');
-  Result := 'R$ ' + FormatFloat('#,##0.00', Value, FS);
+  formatSettings := TFormatSettings.Create('pt-BR');
+  Result := 'R$ ' + FormatFloat('#,##0.00', AValue, formatSettings);
 end;
 
-function SafeStrToFloatInv(const S: string; out V: Double): Boolean;
-var FS: TFormatSettings;
+function SafeStrToFloatInv(const AValue: string; out AResult: Double): Boolean;
+var
+  formatSettings: TFormatSettings;
 begin
-  FS := TFormatSettings.Create;
-  FS.DecimalSeparator := '.';
-  FS.ThousandSeparator := ',';
-  Result := TryStrToFloat(S, V, FS);
+  formatSettings := TFormatSettings.Create;
+  formatSettings.DecimalSeparator := '.';
+  formatSettings.ThousandSeparator := ',';
+  Result := TryStrToFloat(AValue, AResult, formatSettings);
 end;
 
 end.

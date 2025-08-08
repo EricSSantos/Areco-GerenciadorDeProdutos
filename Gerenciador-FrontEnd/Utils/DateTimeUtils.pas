@@ -5,40 +5,42 @@ interface
 uses
   System.SysUtils, System.DateUtils;
 
-function ParseISO8601(const S: string; out D: TDateTime): Boolean;
-function FormatISO8601UTC(const D: TDateTime): string;
-function DisplayDateTimeBR(const D: TDateTime): string;
+function ParseISO8601(const AValue: string; out ADateTime: TDateTime): Boolean;
+function FormatISO8601UTC(const ADateTime: TDateTime): string;
+function DisplayDateTimeBR(const ADateTime: TDateTime): string;
 
 implementation
 
-function ParseISO8601(const S: string; out D: TDateTime): Boolean;
+function ParseISO8601(const AValue: string; out ADateTime: TDateTime): Boolean;
 begin
   Result := False;
-  D := 0;
-  if S = '' then Exit;
+  ADateTime := 0;
+  if AValue = '' then
+    Exit;
   try
-    D := ISO8601ToDate(S, False);
+    ADateTime := ISO8601ToDate(AValue, False);
     Result := True;
   except
     Result := False;
   end;
 end;
 
-function FormatISO8601UTC(const D: TDateTime): string;
+function FormatISO8601UTC(const ADateTime: TDateTime): string;
 var
-  U: TDateTime;
+  utcDate: TDateTime;
 begin
-  if D = 0 then Exit('');
-  U := TTimeZone.Local.ToUniversalTime(D);
-  Result := DateToISO8601(U, True);
+  if ADateTime = 0 then
+    Exit('');
+  utcDate := TTimeZone.Local.ToUniversalTime(ADateTime);
+  Result := DateToISO8601(utcDate, True);
 end;
 
-function DisplayDateTimeBR(const D: TDateTime): string;
+function DisplayDateTimeBR(const ADateTime: TDateTime): string;
 begin
-  if D = 0 then
+  if ADateTime = 0 then
     Result := ''
   else
-    Result := FormatDateTime('dd/mm/yyyy hh:nn', D);
+    Result := FormatDateTime('dd/mm/yyyy hh:nn', ADateTime);
 end;
 
 end.

@@ -5,73 +5,84 @@ interface
 uses
   System.SysUtils, System.JSON;
 
-function JsonGetStr(Obj: TJSONObject; const Name: string; const ADefault: string = ''): string;
-function JsonGetInt(Obj: TJSONObject; const Name: string; const ADefault: Integer = 0): Integer;
-function JsonGetFloat(Obj: TJSONObject; const Name: string; const ADefault: Double = 0): Double;
-function JsonGetBool(Obj: TJSONObject; const Name: string; const ADefault: Boolean = False): Boolean;
-function JsonGetArray(Obj: TJSONObject; const Name: string): TJSONArray;
-function JsonParse(const S: string): TJSONValue;
+function JsonGetStr(AObject: TJSONObject; const AName: string; const ADefault: string = ''): string;
+function JsonGetInt(AObject: TJSONObject; const AName: string; const ADefault: Integer = 0): Integer;
+function JsonGetFloat(AObject: TJSONObject; const AName: string; const ADefault: Double = 0): Double;
+function JsonGetBool(AObject: TJSONObject; const AName: string; const ADefault: Boolean = False): Boolean;
+function JsonGetArray(AObject: TJSONObject; const AName: string): TJSONArray;
+function JsonParse(const AValue: string): TJSONValue;
 
 implementation
 
-function JsonGetStr(Obj: TJSONObject; const Name: string; const ADefault: string): string;
-var V: TJSONValue;
+function JsonGetStr(AObject: TJSONObject; const AName: string; const ADefault: string): string;
+var
+  jsonValue: TJSONValue;
 begin
   Result := ADefault;
-  if Obj = nil then Exit;
-  V := Obj.GetValue(Name);
-  if (V <> nil) and (V.Value <> '') then
-    Result := V.Value;
+  if AObject = nil then
+    Exit;
+  jsonValue := AObject.GetValue(AName);
+  if (jsonValue <> nil) and (jsonValue.Value <> '') then
+    Result := jsonValue.Value;
 end;
 
-function JsonGetInt(Obj: TJSONObject; const Name: string; const ADefault: Integer): Integer;
-var V: TJSONValue;
+function JsonGetInt(AObject: TJSONObject; const AName: string; const ADefault: Integer): Integer;
+var
+  jsonValue: TJSONValue;
 begin
   Result := ADefault;
-  if Obj = nil then Exit;
-  V := Obj.GetValue(Name);
-  if (V is TJSONNumber) then
-    Result := TJSONNumber(V).AsInt;
+  if AObject = nil then
+    Exit;
+  jsonValue := AObject.GetValue(AName);
+  if jsonValue is TJSONNumber then
+    Result := TJSONNumber(jsonValue).AsInt;
 end;
 
-function JsonGetFloat(Obj: TJSONObject; const Name: string; const ADefault: Double): Double;
-var V: TJSONValue;
+function JsonGetFloat(AObject: TJSONObject; const AName: string; const ADefault: Double): Double;
+var
+  jsonValue: TJSONValue;
 begin
   Result := ADefault;
-  if Obj = nil then Exit;
-  V := Obj.GetValue(Name);
-  if (V is TJSONNumber) then
-    Result := TJSONNumber(V).AsDouble;
+  if AObject = nil then
+    Exit;
+  jsonValue := AObject.GetValue(AName);
+  if jsonValue is TJSONNumber then
+    Result := TJSONNumber(jsonValue).AsDouble;
 end;
 
-function JsonGetBool(Obj: TJSONObject; const Name: string; const ADefault: Boolean): Boolean;
-var V: TJSONValue;
+function JsonGetBool(AObject: TJSONObject; const AName: string; const ADefault: Boolean): Boolean;
+var
+  jsonValue: TJSONValue;
 begin
   Result := ADefault;
-  if Obj = nil then Exit;
-  V := Obj.GetValue(Name);
-  if (V is TJSONBool) then
-    Result := TJSONBool(V).AsBoolean
-  else if (V <> nil) and (V.Value <> '') then
-    Result := SameText(V.Value, 'true');
+  if AObject = nil then
+    Exit;
+  jsonValue := AObject.GetValue(AName);
+  if jsonValue is TJSONBool then
+    Result := TJSONBool(jsonValue).AsBoolean
+  else if (jsonValue <> nil) and (jsonValue.Value <> '') then
+    Result := SameText(jsonValue.Value, 'true');
 end;
 
-function JsonGetArray(Obj: TJSONObject; const Name: string): TJSONArray;
-var V: TJSONValue;
+function JsonGetArray(AObject: TJSONObject; const AName: string): TJSONArray;
+var
+  jsonValue: TJSONValue;
 begin
   Result := nil;
-  if Obj = nil then Exit;
-  V := Obj.GetValue(Name);
-  if V is TJSONArray then
-    Result := TJSONArray(V);
+  if AObject = nil then
+    Exit;
+  jsonValue := AObject.GetValue(AName);
+  if jsonValue is TJSONArray then
+    Result := TJSONArray(jsonValue);
 end;
 
-function JsonParse(const S: string): TJSONValue;
+function JsonParse(const AValue: string): TJSONValue;
 begin
   Result := nil;
-  if S = '' then Exit;
+  if AValue = '' then
+    Exit;
   try
-    Result := TJSONObject.ParseJSONValue(S);
+    Result := TJSONObject.ParseJSONValue(AValue);
   except
     Result := nil;
   end;

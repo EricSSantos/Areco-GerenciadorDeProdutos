@@ -31,10 +31,10 @@ type
     procedure Produtos1Click(Sender: TObject);
     procedure Sair1Click(Sender: TObject);
   private
-    procedure InicializarStatusBar;
-    procedure IniciarTimer;
-    function ObterNomeComputador: string;
-    procedure AbrirAbaComFormulario(const Titulo: string; FormClass: TFormClass);
+    procedure InitializeStatusBar;
+    procedure StartTimer;
+    function GetComputerNameText: string;
+    procedure OpenTabWithForm(const ATitle: string; AFormClass: TFormClass);
   public
   end;
 
@@ -50,8 +50,8 @@ uses
 
 procedure TfrmPrincipal.FormCreate(Sender: TObject);
 begin
-  InicializarStatusBar;
-  IniciarTimer;
+  InitializeStatusBar;
+  StartTimer;
 end;
 
 procedure TfrmPrincipal.TimerTimer(Sender: TObject);
@@ -59,25 +59,25 @@ begin
   StatusBar.Panels[0].Text := 'Data/Hora: ' + DisplayDateTimeBR(Now);
 end;
 
-procedure TfrmPrincipal.InicializarStatusBar;
+procedure TfrmPrincipal.InitializeStatusBar;
 begin
   StatusBar.Panels[0].Text := 'Data/Hora:';
-  StatusBar.Panels[1].Text := 'Computador: ' + ObterNomeComputador;
+  StatusBar.Panels[1].Text := 'Computador: ' + GetComputerNameText;
 end;
 
-function TfrmPrincipal.ObterNomeComputador: string;
+function TfrmPrincipal.GetComputerNameText: string;
 var
-  Buffer: array[0..MAX_COMPUTERNAME_LENGTH + 1] of Char;
-  Tamanho: DWORD;
+  buffer: array[0..MAX_COMPUTERNAME_LENGTH + 1] of Char;
+  tamanho: DWORD;
 begin
-  Tamanho := Length(Buffer);
-  if GetComputerName(Buffer, Tamanho) then
-    Result := Buffer
+  tamanho := Length(buffer);
+  if GetComputerName(buffer, tamanho) then
+    Result := buffer
   else
     Result := 'Desconhecido';
 end;
 
-procedure TfrmPrincipal.IniciarTimer;
+procedure TfrmPrincipal.StartTimer;
 begin
   Timer.Interval := 1000;
   Timer.Enabled := True;
@@ -85,7 +85,7 @@ end;
 
 procedure TfrmPrincipal.Produtos1Click(Sender: TObject);
 begin
-  AbrirAbaComFormulario('Produtos', TfrmProdutos);
+  OpenTabWithForm('Produtos', TfrmProdutos);
 end;
 
 procedure TfrmPrincipal.Sair1Click(Sender: TObject);
@@ -93,30 +93,30 @@ begin
   Close;
 end;
 
-procedure TfrmPrincipal.AbrirAbaComFormulario(const Titulo: string; FormClass: TFormClass);
+procedure TfrmPrincipal.OpenTabWithForm(const ATitle: string; AFormClass: TFormClass);
 var
   i: Integer;
-  Aba: TTabSheet;
-  Form: TForm;
+  aba: TTabSheet;
+  form: TForm;
 begin
   for i := 0 to PageControl.PageCount - 1 do
-    if PageControl.Pages[i].Caption = Titulo then
+    if PageControl.Pages[i].Caption = ATitle then
     begin
       PageControl.ActivePageIndex := i;
       Exit;
     end;
 
-  Aba := TTabSheet.Create(PageControl);
-  Aba.PageControl := PageControl;
-  Aba.Caption := Titulo;
+  aba := TTabSheet.Create(PageControl);
+  aba.PageControl := PageControl;
+  aba.Caption := ATitle;
 
-  Form := FormClass.Create(Self);
-  Form.BorderStyle := bsNone;
-  Form.Align := alClient;
-  Form.Parent := Aba;
-  Form.Show;
+  form := AFormClass.Create(Self);
+  form.BorderStyle := bsNone;
+  form.Align := alClient;
+  form.Parent := aba;
+  form.Show;
 
-  PageControl.ActivePage := Aba;
+  PageControl.ActivePage := aba;
 end;
 
 end.

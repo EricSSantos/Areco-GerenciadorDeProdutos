@@ -15,20 +15,20 @@ type
   private
     FApi: TApiService;
     const ACTION = '/api/v1/products';
+    function JsonArrayFrom(const AIds: array of string): string; overload;
+    function JsonArrayFrom(const AIds: TStrings): string; overload;
   public
     constructor Create(AApi: TApiService);
-    function GetAll(out AMensagem: string): string;
-    function GetById(const AId: string; out AMensagem: string): string;
-    function Post(const AProduto: TProduto; out AMensagem: string): string;
-    function Put(const AProduto: TProduto; out AMensagem: string): string;
-    function Delete(const AId: string; out AMensagem: string): string;
-    function DeleteBatch(const Ids: array of string; out AMensagem: string): string; overload;
-    function DeleteBatch(const Ids: TStrings; out AMensagem: string): string; overload;
+    function GetAll: TApiResponse;
+    function GetById(const AId: string): TApiResponse;
+    function Post(const AProduct: TProduto): TApiResponse;
+    function Put(const AProduct: TProduto): TApiResponse;
+    function Delete(const AId: string): TApiResponse;
+    function DeleteBatch(const AIds: array of string): TApiResponse; overload;
+    function DeleteBatch(const AIds: TStrings): TApiResponse; overload;
   end;
 
 implementation
-
-{ TProdutosController }
 
 constructor TProdutosController.Create(AApi: TApiService);
 begin
@@ -36,64 +36,74 @@ begin
   FApi := AApi;
 end;
 
-function TProdutosController.GetAll(out AMensagem: string): string;
+function TProdutosController.GetAll: TApiResponse;
 begin
-  Result := FApi.Get(ACTION, '', AMensagem);
+  Result := FApi.Get(ACTION, '');
 end;
 
-function TProdutosController.GetById(const AId: string; out AMensagem: string): string;
+function TProdutosController.GetById(const AId: string): TApiResponse;
 begin
-  Result := FApi.Get(ACTION, AId, AMensagem);
+  Result := FApi.Get(ACTION, AId);
 end;
 
-function TProdutosController.Post(const AProduto: TProduto; out AMensagem: string): string;
+function TProdutosController.Post(const AProduct: TProduto): TApiResponse;
 var
-  BodyJson: string;
+  bodyJson: string;
 begin
-  BodyJson := TJson.ObjectToJsonString(AProduto);
-  Result := FApi.Post(ACTION, '', BodyJson, AMensagem);
+  bodyJson := TJson.ObjectToJsonString(AProduct);
+  Result := FApi.Post(ACTION, '', bodyJson);
 end;
 
-function TProdutosController.Put(const AProduto: TProduto; out AMensagem: string): string;
+function TProdutosController.Put(const AProduct: TProduto): TApiResponse;
 var
-  BodyJson: string;
+  bodyJson: string;
 begin
-  BodyJson := TJson.ObjectToJsonString(AProduto);
-  Result := FApi.Put(ACTION, '', BodyJson, AMensagem);
+  bodyJson := TJson.ObjectToJsonString(AProduct);
+  Result := FApi.Put(ACTION, '', bodyJson);
 end;
 
-function TProdutosController.Delete(const AId: string; out AMensagem: string): string;
+function TProdutosController.Delete(const AId: string): TApiResponse;
 begin
-  Result := FApi.Delete(ACTION, AId, AMensagem);
+  Result := FApi.Delete(ACTION, AId);
 end;
 
-function TProdutosController.DeleteBatch(const Ids: array of string; out AMensagem: string): string;
+function TProdutosController.DeleteBatch(const AIds: array of string): TApiResponse;
+begin
+  Result := FApi.DeleteBatch(ACTION, 'batch', JsonArrayFrom(AIds));
+end;
+
+function TProdutosController.DeleteBatch(const AIds: TStrings): TApiResponse;
+begin
+  Result := FApi.DeleteBatch(ACTION, 'batch', JsonArrayFrom(AIds));
+end;
+
+function TProdutosController.JsonArrayFrom(const AIds: array of string): string;
 var
-  JA: TJSONArray;
-  I : Integer;
+  jsonArray: TJSONArray;
+  i: Integer;
 begin
-  JA := TJSONArray.Create;
+  jsonArray := TJSONArray.Create;
   try
-    for I := Low(Ids) to High(Ids) do
-      JA.Add(Ids[I]);
-    Result := FApi.DeleteBatch(ACTION, 'batch', JA.ToJSON, AMensagem);
+    for i := Low(AIds) to High(AIds) do
+      jsonArray.Add(AIds[i]);
+    Result := jsonArray.ToJSON;
   finally
-    JA.Free;
+    jsonArray.Free;
   end;
 end;
 
-function TProdutosController.DeleteBatch(const Ids: TStrings; out AMensagem: string): string;
+function TProdutosController.JsonArrayFrom(const AIds: TStrings): string;
 var
-  JA: TJSONArray;
-  I : Integer;
+  jsonArray: TJSONArray;
+  i: Integer;
 begin
-  JA := TJSONArray.Create;
+  jsonArray := TJSONArray.Create;
   try
-    for I := 0 to Ids.Count - 1 do
-      JA.Add(Ids[I]);
-    Result := FApi.DeleteBatch(ACTION, 'batch', JA.ToJSON, AMensagem);
+    for i := 0 to AIds.Count - 1 do
+      jsonArray.Add(AIds[i]);
+    Result := jsonArray.ToJSON;
   finally
-    JA.Free;
+    jsonArray.Free;
   end;
 end;
 
