@@ -132,7 +132,7 @@ O **Frontend VCL** é a aplicação em **Delphi (VCL)** que consome a API do Bac
 
 **Configurar URL da API**
 1. Abra o projeto no Delphi.
-2. Ajuste a **Base URL** para apontar para a API (ex.: `http://localhost:5289/api/v1`).
+2. Ajuste a **Base URL** para apontar para a API (ex.: `http://localhost:5289/`).
 
 **Executar**
 - Pressione **F9** no Delphi.
