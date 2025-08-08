@@ -15,6 +15,9 @@
 
         public Product(string name, string? description, decimal price, int stock)
         {
+            EnsureValidPrice(price);
+            EnsureValidStock(stock);
+
             Name = name;
             Description = description;
             Price = price;
@@ -24,11 +27,26 @@
 
         public void Update(string name, string? description, decimal price, int stock)
         {
+            EnsureValidPrice(price);
+            EnsureValidStock(stock);
+
             Name = name;
             Description = description;
             Price = price;
             Stock = stock;
             UpdatedAt = DateTime.UtcNow;
+        }
+
+        private static void EnsureValidStock(int stock)
+        {
+            if (stock < 0)
+                throw new ArgumentException("O estoque não pode ser negativo.", nameof(stock));
+        }
+
+        private static void EnsureValidPrice(decimal price)
+        {
+            if (price <= 0)
+                throw new ArgumentException("O preço deve ser maior que zero.", nameof(price));
         }
     }
 }

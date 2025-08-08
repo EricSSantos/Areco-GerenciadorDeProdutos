@@ -7,7 +7,7 @@ namespace GerenciadorDeProdutos.API.Configurations
         private const string DevPolicy = "DevPolicy";
         private const string ProdPolicy = "ProdPolicy";
 
-        public static void AddCors(this WebApplicationBuilder builder)
+        public static void AddCorsPolicies(this WebApplicationBuilder builder)
         {
             var corsSettings = builder.Configuration
                 .GetSection("Cors")
@@ -30,7 +30,7 @@ namespace GerenciadorDeProdutos.API.Configurations
             });
         }
 
-        public static void UseCors(this WebApplication app)
+        public static void UseCorsAndHttps(this WebApplication app)
         {
             var env = app.Services.GetRequiredService<IWebHostEnvironment>();
 

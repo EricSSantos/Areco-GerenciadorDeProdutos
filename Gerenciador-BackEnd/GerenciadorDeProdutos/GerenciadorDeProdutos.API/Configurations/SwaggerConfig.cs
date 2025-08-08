@@ -1,46 +1,44 @@
 ﻿using GerenciadorDeProdutos.Domain.Commons.Settings;
 using Microsoft.OpenApi.Models;
 
-namespace GerenciadorDeProdutos.API.Configurations
+public static class SwaggerConfig
 {
-    public static class SwaggerConfig
+    public static void AddSwagger(this WebApplicationBuilder builder)
     {
-        public static void AddSwagger(this WebApplicationBuilder builder)
+        var appSettings = builder.Configuration
+            .GetSection("App")
+            .Get<AppSettings>();
+
+        builder.Services.AddSwaggerGen(c =>
         {
-            var appSettings = builder.Services
-                .BuildServiceProvider()
-                .GetRequiredService<AppSettings>();
-
-            builder.Services.AddSwaggerGen(c =>
+            foreach (var (versionKey, versionInfo) in appSettings.Versions)
             {
-                foreach (var (versionKey, versionInfo) in appSettings.Versions)
+                c.SwaggerDoc(versionKey, new OpenApiInfo
                 {
-                    c.SwaggerDoc(versionKey, new OpenApiInfo
-                    {
-                        Title = versionInfo.Name,
-                        Version = versionKey,
-                        Description = versionInfo.Description
-                    });
-                }
-            });
-        }
+                    Title = versionInfo.Name,
+                    Version = versionKey,
+                    Description = versionInfo.Description
+                });
+            }
+        });
+    }
 
-        public static void UseSwagger(this WebApplication app)
+
+    public static void UseSwagger(this WebApplication app)
+    {
+        var appSettings = app.Services.GetRequiredService<AppSettings>();
+
+        SwaggerBuilderExtensions.UseSwagger(app);
+        app.UseSwaggerUI(c =>
         {
-            var appSettings = app.Services.GetRequiredService<AppSettings>();
-
-            SwaggerBuilderExtensions.UseSwagger(app);
-            app.UseSwaggerUI(c =>
+            foreach (var (versionKey, versionInfo) in appSettings.Versions)
             {
-                foreach (var (versionKey, versionInfo) in appSettings.Versions)
-                {
-                    c.SwaggerEndpoint($"/swagger/{versionKey}/swagger.json", versionInfo.Name);
-                }
+                c.SwaggerEndpoint($"/swagger/{versionKey}/swagger.json", versionInfo.Name);
+            }
 
-                c.DefaultModelsExpandDepth(-1);
-                c.RoutePrefix = string.Empty;
-                c.ConfigObject.AdditionalItems["withCredentials"] = true;
-            });
-        }
+            c.DefaultModelsExpandDepth(-1);
+            c.RoutePrefix = string.Empty;
+            c.ConfigObject.AdditionalItems["withCredentials"] = true;
+        });
     }
 }

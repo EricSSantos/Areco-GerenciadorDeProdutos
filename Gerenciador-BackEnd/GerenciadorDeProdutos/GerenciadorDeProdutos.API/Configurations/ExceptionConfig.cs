@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using GerenciadorDeProdutos.Domain.Commons.Models.ViewModels;
 
 namespace GerenciadorDeProdutos.API.Configurations
 {
@@ -31,16 +32,17 @@ namespace GerenciadorDeProdutos.API.Configurations
                 }
                 catch (Exception ex)
                 {
-                    var message = _env.IsDevelopment() ? ex.ToString() : ex.Message;
-                    var errors = new List<string> { "Ocorreu um erro interno." };
-                    var details = _env.IsDevelopment() ? ex.ToString() : null;
+                    var isDev = _env.IsDevelopment();
+                    var message = isDev ? ex.ToString() : ex.Message;
+
+                    var errors = new List<string> { message };
 
                     await WriteErrorAsync(
                         context,
                         errors,
                         HttpStatusCode.InternalServerError,
-                        "Erro interno no servidor",
-                        details);
+                        "Erro interno no servidor"
+                    );
                 }
             }
 
@@ -48,19 +50,16 @@ namespace GerenciadorDeProdutos.API.Configurations
                 HttpContext context,
                 IReadOnlyCollection<string> errors,
                 HttpStatusCode status,
-                string title,
-                string? details = null)
+                string title)
             {
                 context.Response.ContentType = "application/json";
                 context.Response.StatusCode = (int)status;
 
-                var response = new
-                {
-                    statusCode = (int)status,
-                    title,
-                    errors,
-                    details
-                };
+                var response = ResponseViewModel<object>.Error(
+                    errors: errors,
+                    statusCode: status,
+                    title: title
+                );
 
                 var json = JsonSerializer.Serialize(
                     response,
@@ -74,5 +73,4 @@ namespace GerenciadorDeProdutos.API.Configurations
             }
         }
     }
-
 }
