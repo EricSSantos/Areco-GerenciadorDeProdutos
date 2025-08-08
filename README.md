@@ -6,9 +6,10 @@ O sistema será dividido em duas partes:
 1. **API Backend** – responsável por processar as requisições e interagir com o banco de dados (**SQL Server** ou **PostgreSQL**) para persistir os dados.  
 2. **Frontend VCL** – interface para o usuário, feita com **Visual Component Library (VCL)**, exibindo, cadastrando e editando produtos.
 
-A API deve seguir os princípios de **Programação Orientada a Objetos (POO)** e utilizar um **ORM** para facilitar o acesso ao banco de dados.  
-No frontend, o formulário de cadastro será exibido em uma janela modal e a estilização deve ser feita **sem bibliotecas externas**.
-Também serão implementados **testes unitários** com **DUnitX** para validar a qualidade do código.
+A API segue os princípios de **Programação Orientada a Objetos (POO)** e utiliza um **ORM** para acesso ao banco.  
+No frontend, a inclusão de produtos é feita em janela modal, e a edição é realizada diretamente na grade (inline).  
+A estilização é feita **sem bibliotecas externas**.  
+Também há a previsão de **testes unitários** com **DUnitX**.
 
 ---
 
@@ -33,7 +34,7 @@ Também serão implementados **testes unitários** com **DUnitX** para validar a
 <details>
 <summary><strong>Documentação</strong></summary>
   
-O backend processa as requisições relacionadas a produtos, recebe pedidos do frontend, aplica regras, acessa o banco de dados e retorna respostas padronizadas.
+O backend processa requisições de produtos, aplica regras, acessa o banco de dados e retorna respostas padronizadas.
 
 **Requisitos**
 - .NET SDK 9.0+
@@ -62,21 +63,7 @@ A API sobe em `http://localhost:5289` com Swagger.
 </details>
 
 <details>
-<summary><strong>2) Visão geral</strong></summary>
-
-- **Stack**: .NET 9, ASP.NET Core, EF Core, PostgreSQL  
-- **Endpoints**: `/api/v1/*`  
-- **Swagger**: documentação e testes via navegador
-
-**Camadas**
-- **API**: controllers e configs  
-- **Application**: services  
-- **Domain**: entidades e modelos  
-- **Infrastructure**: banco, mappings, repositórios e migrations
-</details>
-
-<details>
-<summary><strong>3) Entidade Produto</strong></summary>
+<summary><strong>2) Entidade Produto</strong></summary>
 
 Campos: `Id`, `Code`, `Name`, `Description?`, `Price`, `Stock`, `CreatedAt`, `UpdatedAt`  
 
@@ -87,7 +74,7 @@ Campos: `Id`, `Code`, `Name`, `Description?`, `Price`, `Stock`, `CreatedAt`, `Up
 </details>
 
 <details>
-<summary><strong>4) Endpoints</strong></summary>
+<summary><strong>3) Endpoints</strong></summary>
 
 Base: `/api/v1/products`
 
@@ -104,7 +91,7 @@ Base: `/api/v1/products`
 </details>
 
 <details>
-<summary><strong>5) Fluxo interno</strong></summary>
+<summary><strong>4) Fluxo interno</strong></summary>
 
 1. Controller recebe requisição  
 2. Chama Service (regra de negócio)  
@@ -113,7 +100,7 @@ Base: `/api/v1/products`
 </details>
 
 <details>
-<summary><strong>6) Glossário</strong></summary>
+<summary><strong>5) Glossário</strong></summary>
 
 - **API**: serviço que recebe e responde  
 - **Endpoint**: endereço da API  
@@ -124,4 +111,58 @@ Base: `/api/v1/products`
 - **UnitOfWork**: garante transações  
 - **Swagger**: interface de teste
 </details>
+</details>
+
+## Frontend VCL
+
+<details>
+<summary><strong>Documentação</strong></summary>
+
+O **Frontend VCL** é a aplicação em **Delphi (VCL)** que consome a API do Backend para listar, incluir e editar produtos.
+
+**Requisitos**
+- Delphi (ex.: 10.3+)
+- Windows
+- API Backend rodando em `http://localhost:5289` (ou a URL configurada)
+
+---
+
+<details>
+<summary><strong>1) Como rodar</strong></summary>
+
+**Configurar URL da API**
+1. Abra o projeto no Delphi.
+2. Ajuste a **Base URL** para apontar para a API (ex.: `http://localhost:5289/api/v1`).
+
+**Executar**
+- Pressione **F9** no Delphi.
+- A tela principal abrirá com a lista de produtos carregada via API.
+
+**Pré-condição**
+- API deve estar em execução antes de abrir o Frontend.
+</details>
+
+<details>
+<summary><strong>2) Estrutura</strong></summary>
+
+- **Controllers**: fazem chamadas HTTP para a API.
+- **Entities/Models**: representam os dados do produto.
+- **Forms**:
+  - **Principal**: acesso ao módulo de produtos.
+  - **Produtos**: listagem em grid com edição inline.
+  - **Cadastro**: modal para inclusão.
+
+</details>
+
+<details>
+<summary><strong>3) Funcionalidades</strong></summary>
+
+- **Buscar**: carrega produtos do Backend.
+- **Incluir**: abre modal para cadastro.
+- **Editar**: diretamente na grid (inline).
+- **Excluir**: individual ou em lote (checkbox).
+- **Feedback**: mensagens de sucesso/erro conforme retorno da API.
+
+</details>
+
 </details>
