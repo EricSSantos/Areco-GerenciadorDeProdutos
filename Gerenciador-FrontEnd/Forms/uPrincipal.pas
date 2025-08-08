@@ -3,11 +3,18 @@ unit uPrincipal;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages,
-  System.SysUtils, System.Variants, System.Classes,
-  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
-  Vcl.ComCtrls, Vcl.Menus, Vcl.ExtCtrls,
-  uProdutos, Vcl.Imaging.pngimage;
+  Winapi.Windows,
+  Winapi.Messages,
+  System.SysUtils,
+  System.Classes,
+  Vcl.Graphics,
+  Vcl.Controls,
+  Vcl.Forms,
+  Vcl.Dialogs,
+  Vcl.ComCtrls,
+  Vcl.Menus,
+  Vcl.ExtCtrls,
+  uProdutos;
 
 type
   TfrmPrincipal = class(TForm)
@@ -17,16 +24,12 @@ type
     Controle1: TMenuItem;
     Produtos1: TMenuItem;
     Sair1: TMenuItem;
-    Usuarios: TMenuItem;
     PageControl: TPageControl;
     Home: TTabSheet;
-    Image1: TImage;
-
     procedure FormCreate(Sender: TObject);
     procedure TimerTimer(Sender: TObject);
     procedure Produtos1Click(Sender: TObject);
     procedure Sair1Click(Sender: TObject);
-
   private
     procedure InicializarStatusBar;
     procedure IniciarTimer;
@@ -42,6 +45,9 @@ implementation
 
 {$R *.dfm}
 
+uses
+  DateTimeUtils;
+
 procedure TfrmPrincipal.FormCreate(Sender: TObject);
 begin
   InicializarStatusBar;
@@ -50,15 +56,13 @@ end;
 
 procedure TfrmPrincipal.TimerTimer(Sender: TObject);
 begin
-  StatusBar.Panels[1].Text := 'Data/Hora: ' +
-    FormatDateTime('dd/mm/yyyy hh:nn:ss', Now);
+  StatusBar.Panels[0].Text := 'Data/Hora: ' + DisplayDateTimeBR(Now);
 end;
 
 procedure TfrmPrincipal.InicializarStatusBar;
 begin
-  StatusBar.Panels[0].Text := 'Usuário: Eric Silva';
-  StatusBar.Panels[1].Text := 'Data/Hora: ';
-  StatusBar.Panels[2].Text := 'Computador: ' + ObterNomeComputador;
+  StatusBar.Panels[0].Text := 'Data/Hora:';
+  StatusBar.Panels[1].Text := 'Computador: ' + ObterNomeComputador;
 end;
 
 function TfrmPrincipal.ObterNomeComputador: string;
@@ -95,22 +99,17 @@ var
   Aba: TTabSheet;
   Form: TForm;
 begin
-  // Verifica se a aba já está aberta
   for i := 0 to PageControl.PageCount - 1 do
-  begin
     if PageControl.Pages[i].Caption = Titulo then
     begin
       PageControl.ActivePageIndex := i;
       Exit;
     end;
-  end;
 
-  // Cria nova aba
   Aba := TTabSheet.Create(PageControl);
   Aba.PageControl := PageControl;
   Aba.Caption := Titulo;
 
-  // Cria e embute o form
   Form := FormClass.Create(Self);
   Form.BorderStyle := bsNone;
   Form.Align := alClient;

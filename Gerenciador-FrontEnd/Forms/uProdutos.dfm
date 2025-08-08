@@ -23,7 +23,6 @@ object frmProdutos: TfrmProdutos
     Color = clWhitesmoke
     ParentBackground = False
     TabOrder = 0
-    ExplicitWidth = 923
     object Header: TPanel
       Left = 0
       Top = 0
@@ -34,8 +33,7 @@ object frmProdutos: TfrmProdutos
       Color = clWhite
       ParentBackground = False
       TabOrder = 0
-      ExplicitWidth = 923
-      object Label1: TLabel
+      object sp1: TLabel
         Left = 89
         Top = 0
         Width = 5
@@ -51,8 +49,8 @@ object frmProdutos: TfrmProdutos
         ParentFont = False
         ExplicitHeight = 28
       end
-      object Label2: TLabel
-        Left = 361
+      object sp2: TLabel
+        Left = 272
         Top = 0
         Width = 5
         Height = 33
@@ -65,6 +63,7 @@ object frmProdutos: TfrmProdutos
         Font.Name = 'Segoe UI Light'
         Font.Style = []
         ParentFont = False
+        ExplicitLeft = 361
         ExplicitHeight = 28
       end
       object btnIncluir: TBitBtn
@@ -78,7 +77,7 @@ object frmProdutos: TfrmProdutos
         Enabled = False
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBtnText
-        Font.Height = -12
+        Font.Height = 18
         Font.Name = 'Segoe UI Semibold'
         Font.Style = []
         ImageIndex = 0
@@ -161,85 +160,6 @@ object frmProdutos: TfrmProdutos
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
-        ExplicitLeft = 95
-        ExplicitTop = -6
-      end
-      object btnEditar: TBitBtn
-        Left = 272
-        Top = 0
-        Width = 89
-        Height = 33
-        Hint = 'Clique para alterar os dados do produto selecionado.'
-        Align = alLeft
-        Caption = 'Editar'
-        Enabled = False
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBtnText
-        Font.Height = -12
-        Font.Name = 'Segoe UI Semibold'
-        Font.Style = []
-        ImageIndex = 0
-        Glyph.Data = {
-          F6060000424DF606000000000000360000002800000018000000180000000100
-          180000000000C0060000C30E0000C30E00000000000000000000FFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          8080800000000D0D0D808080FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFF808080000000000000000000000000000000404040808080FFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFF80808000000000000000000040404000000000000040404000000000
-          0000404040BFBFBFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFF404040000000000000000000808080FFFFFF0000000000
-          00FFFFFFBFBFBF404040000000000000404040BFBFBFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFF808080000000000000000000808080FFFFFFFFFFFF
-          FFFFFF000000000000FFFFFFFFFFFFFFFFFF8080800000000000000000008080
-          80FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF808080000000000000808080FFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFFFFBFBFBF
-          808080000000000000404040FFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFBFBFBF000000000000FFFFFFFFFFFFFFFFFFFFFFFF
-          000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000000000
-          00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFF
-          FFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000
-          00000000FFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFBFBFBF000000000000BFBFBFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFFFF
-          000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF8080800000000000000000
-          00000000404040BFBFBFFFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFF
-          FFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFF808080000000000000
-          000000808080808080000000000000000000606060FFFFFFFFFFFFFFFFFF0000
-          00000000FFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFF80808000000000
-          0000000000808080FFFFFFFFFFFFFFFFFFBFBFBF606060000000000000202020
-          808080FFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFFFF0000000000000000
-          00000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000
-          0000000000000000000000404040000000000000FFFFFFFFFFFFFFFFFFFFFFFF
-          000000000000000000000000808080FFFFFFFFFFFFFFFFFFFFFFFF0000000000
-          00000000000000FFFFFFFFFFFFBFBFBF404040000000000000000000FFFFFFFF
-          FFFFFFFFFFFFFFFF202020000000000000808080FFFFFFFFFFFFFFFFFF404040
-          000000000000000000BFBFBFFFFFFFFFFFFFFFFFFFFFFFFF8080800000000000
-          00303030FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF80808000000000000040404060
-          6060000000000000000000404040FFFFFFFFFFFFFFFFFFFFFFFF808080000000
-          000000000000808080FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFBFBF
-          BF404040000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFBFBFBF00
-          0000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFF8F8F8F101010000000000000404040BFBFBFFFFF
-          FF808080000000000000000000808080FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF808080000000
-          000000000000000000000000000000808080FFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFBFBFBF808080000000000000808080FFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF}
-        ParentFont = False
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 3
       end
       object btnExcluir: TBitBtn
         Left = 183
@@ -252,7 +172,7 @@ object frmProdutos: TfrmProdutos
         Enabled = False
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBtnText
-        Font.Height = -12
+        Font.Height = 18
         Font.Name = 'Segoe UI Semibold'
         Font.Style = []
         ImageIndex = 0
@@ -335,9 +255,10 @@ object frmProdutos: TfrmProdutos
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
+        OnClick = btnExcluirClick
       end
       object btnCancelar: TBitBtn
-        Left = 455
+        Left = 366
         Top = 0
         Width = 89
         Height = 33
@@ -347,7 +268,7 @@ object frmProdutos: TfrmProdutos
         Enabled = False
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBtnText
-        Font.Height = -12
+        Font.Height = 18
         Font.Name = 'Segoe UI Semibold'
         Font.Style = []
         ImageIndex = 0
@@ -429,10 +350,12 @@ object frmProdutos: TfrmProdutos
         ParentFont = False
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 4
+        OnClick = btnCancelarClick
+        ExplicitLeft = 455
       end
       object btnGravar: TBitBtn
-        Left = 366
+        Left = 277
         Top = 0
         Width = 89
         Height = 33
@@ -442,7 +365,7 @@ object frmProdutos: TfrmProdutos
         Enabled = False
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBtnText
-        Font.Height = -12
+        Font.Height = 18
         Font.Name = 'Segoe UI Semibold'
         Font.Style = []
         ImageIndex = 0
@@ -524,7 +447,9 @@ object frmProdutos: TfrmProdutos
         ParentFont = False
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 3
+        OnClick = btnGravarClick
+        ExplicitLeft = 366
       end
       object btnBuscar: TBitBtn
         Left = 0
@@ -536,7 +461,7 @@ object frmProdutos: TfrmProdutos
         Caption = 'Buscar'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBtnText
-        Font.Height = -12
+        Font.Height = 18
         Font.Name = 'Segoe UI Semibold'
         Font.Style = []
         ImageIndex = 0
@@ -602,43 +527,50 @@ object frmProdutos: TfrmProdutos
         ShowHint = True
         TabOrder = 0
         OnClick = btnBuscarClick
-        ExplicitLeft = -1
-        ExplicitTop = -6
       end
     end
-    object GroupBox1: TGroupBox
+    object GroupBox: TGroupBox
       Left = 0
       Top = 33
       Width = 562
       Height = 408
       Align = alClient
-      Caption = 'Produtos cadastrados'
+      Caption = 'Produtos Cadastrados'
       Color = clWhite
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
-      Font.Height = -12
-      Font.Name = 'Segoe UI Semibold'
+      Font.Height = 18
+      Font.Name = 'Segoe UI'
       Font.Style = []
       ParentBackground = False
       ParentColor = False
       ParentFont = False
       TabOrder = 1
-      ExplicitWidth = 923
-      object DBGrid1: TDBGrid
+      object DBGrid: TDBGrid
         Left = 2
-        Top = 17
+        Top = 19
         Width = 558
-        Height = 389
+        Height = 387
         Align = alClient
         BorderStyle = bsNone
+        Color = clWhite
         DataSource = dsProdutos
         Enabled = False
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = 18
+        Font.Name = 'Segoe UI'
+        Font.Style = []
+        ParentFont = False
         TabOrder = 0
         TitleFont.Charset = DEFAULT_CHARSET
         TitleFont.Color = clWindowText
         TitleFont.Height = -12
         TitleFont.Name = 'Segoe UI Semibold'
         TitleFont.Style = []
+        OnCellClick = DBGridCellClick
+        OnDrawColumnCell = DBGridDrawColumnCell
+        OnKeyDown = DBGridKeyDown
       end
     end
   end

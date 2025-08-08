@@ -6,7 +6,10 @@ uses
   uProdutos in '..\Forms\uProdutos.pas' {frmProdutos},
   ProdutosController in '..\Controllers\ProdutosController.pas',
   ApiService in '..\DataAccess\ApiService.pas',
-  ProdutoEntitie in '..\Entities\ProdutoEntitie.pas';
+  Produto in '..\Entities\Produto.pas',
+  DateTimeUtils in '..\Utils\DateTimeUtils.pas',
+  JsonUtils in '..\Utils\JsonUtils.pas',
+  FormatUtils in '..\Utils\FormatUtils.pas';
 
 {$R *.res}
 

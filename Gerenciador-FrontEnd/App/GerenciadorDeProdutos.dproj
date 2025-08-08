@@ -133,7 +133,10 @@
         </DCCReference>
         <DCCReference Include="..\Controllers\ProdutosController.pas"/>
         <DCCReference Include="..\DataAccess\ApiService.pas"/>
-        <DCCReference Include="..\Entities\ProdutoEntitie.pas"/>
+        <DCCReference Include="..\Entities\Produto.pas"/>
+        <DCCReference Include="..\Utils\DateTimeUtils.pas"/>
+        <DCCReference Include="..\Utils\JsonUtils.pas"/>
+        <DCCReference Include="..\Utils\FormatUtils.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
