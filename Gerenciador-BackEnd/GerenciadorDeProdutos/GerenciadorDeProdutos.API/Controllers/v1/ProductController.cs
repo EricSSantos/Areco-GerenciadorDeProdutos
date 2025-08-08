@@ -81,34 +81,6 @@ namespace GerenciadorDeProdutos.API.Controllers.v1
             ));
         }
 
-        [HttpPost("batch")]
-        public async Task<ActionResult<ResponseViewModel<IEnumerable<ProductViewModel>>>> AddBatch(
-            [FromBody] IEnumerable<CreateProductInputModel> input,
-            CancellationToken cancellationToken)
-        {
-            var result = await _productService.AddBatch(input, cancellationToken);
-
-            return Ok(ResponseViewModel<IEnumerable<ProductViewModel>>.Ok(
-                data: result,
-                statusCode: HttpStatusCode.OK,
-                title: "Produtos criados com sucesso."
-            ));
-        }
-
-        [HttpPut("batch")]
-        public async Task<ActionResult<ResponseViewModel<IEnumerable<ProductViewModel>>>> UpdateBatch(
-            [FromBody] IEnumerable<UpdateProductInputModel> input,
-            CancellationToken cancellationToken)
-        {
-            var result = await _productService.UpdateBatch(input, cancellationToken);
-
-            return Ok(ResponseViewModel<IEnumerable<ProductViewModel>>.Ok(
-                data: result,
-                statusCode: HttpStatusCode.OK,
-                title: "Produtos atualizados com sucesso."
-            ));
-        }
-
         [HttpDelete("batch")]
         public async Task<ActionResult<ResponseViewModel<object>>> DeleteBatch(
             [FromBody] IEnumerable<Guid> ids,

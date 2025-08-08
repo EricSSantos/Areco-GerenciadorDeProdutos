@@ -15,6 +15,23 @@ namespace GerenciadorDeProdutos.Application.Services
             _unitOfWork = unitOfWork;
         }
 
+        public async Task<IEnumerable<ProductViewModel>> GetAll(
+            CancellationToken cancellationToken = default)
+        {
+            var products = _unitOfWork.ProductRepository.GetAll().ToList();
+            return await Task.FromResult(products.Select(ToViewModel));
+        }
+
+        public async Task<ProductViewModel?> GetById(
+            Guid id,
+            CancellationToken cancellationToken = default)
+        {
+            var product = await _unitOfWork.ProductRepository.GetById(id, cancellationToken)
+                ?? throw new Exception("Produto não encontrado.");
+
+            return ToViewModel(product);
+        }
+
         public async Task<ProductViewModel> Add(
             CreateProductInputModel input,
             CancellationToken cancellationToken = default)
@@ -63,61 +80,6 @@ namespace GerenciadorDeProdutos.Application.Services
             return success;
         }
 
-        public async Task<IEnumerable<ProductViewModel>> GetAll(
-            CancellationToken cancellationToken = default)
-        {
-            var products = _unitOfWork.ProductRepository.GetAll().ToList();
-            return await Task.FromResult(products.Select(ToViewModel));
-        }
-
-        public async Task<ProductViewModel?> GetById(
-            Guid id,
-            CancellationToken cancellationToken = default)
-        {
-            var product = await _unitOfWork.ProductRepository.GetById(id, cancellationToken)
-                ?? throw new Exception("Produto não encontrado.");
-
-            return ToViewModel(product);
-        }
-
-        #region Batch Methods
-
-        public async Task<IEnumerable<ProductViewModel>> AddBatch(
-            IEnumerable<CreateProductInputModel> input,
-            CancellationToken cancellationToken = default)
-        {
-            var products = input.Select(i => new Product(i.Name, i.Description, i.Price, i.Stock)).ToList();
-
-            foreach (var product in products)
-                await _unitOfWork.ProductRepository.Add(product, cancellationToken);
-
-            await _unitOfWork.SaveChanges(cancellationToken);
-
-            return products.Select(ToViewModel);
-        }
-
-        public async Task<IEnumerable<ProductViewModel>> UpdateBatch(
-            IEnumerable<UpdateProductInputModel> input,
-            CancellationToken cancellationToken = default)
-        {
-            var products = new List<Product>();
-
-            foreach (var item in input)
-            {
-                var product = await _unitOfWork.ProductRepository.GetById(item.Id, cancellationToken)
-                    ?? throw new Exception($"Produto {item.Id} não encontrado.");
-
-                product.Update(item.Name, item.Description, item.Price, item.Stock);
-
-                await _unitOfWork.ProductRepository.Update(product, cancellationToken);
-                products.Add(product);
-            }
-
-            await _unitOfWork.SaveChanges(cancellationToken);
-
-            return products.Select(ToViewModel);
-        }
-
         public async Task<int> DeleteBatch(
             IEnumerable<Guid> ids,
             CancellationToken cancellationToken = default)
@@ -138,8 +100,6 @@ namespace GerenciadorDeProdutos.Application.Services
 
             return count;
         }
-
-        #endregion
 
         #region Private Methods
 

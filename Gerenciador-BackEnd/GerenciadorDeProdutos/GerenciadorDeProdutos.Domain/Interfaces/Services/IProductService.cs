@@ -5,6 +5,13 @@ namespace GerenciadorDeProdutos.Domain.Interfaces.Services
 {
     public interface IProductService
     {
+        Task<IEnumerable<ProductViewModel>> GetAll(
+            CancellationToken cancellationToken = default);
+
+        Task<ProductViewModel?> GetById(
+            Guid id,
+            CancellationToken cancellationToken = default);
+
         Task<ProductViewModel> Add(
             CreateProductInputModel input,
             CancellationToken cancellationToken = default);
@@ -15,21 +22,6 @@ namespace GerenciadorDeProdutos.Domain.Interfaces.Services
 
         Task<bool> Delete(
             Guid id,
-            CancellationToken cancellationToken = default);
-
-        Task<IEnumerable<ProductViewModel>> GetAll(
-            CancellationToken cancellationToken = default);
-
-        Task<ProductViewModel?> GetById(
-            Guid id,
-            CancellationToken cancellationToken = default);
-
-        Task<IEnumerable<ProductViewModel>> AddBatch(
-            IEnumerable<CreateProductInputModel> input,
-            CancellationToken cancellationToken = default);
-
-        Task<IEnumerable<ProductViewModel>> UpdateBatch(
-            IEnumerable<UpdateProductInputModel> input,
             CancellationToken cancellationToken = default);
 
         Task<int> DeleteBatch(

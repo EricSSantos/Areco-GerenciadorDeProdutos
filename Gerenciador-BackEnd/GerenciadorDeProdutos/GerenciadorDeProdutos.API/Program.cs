@@ -1,5 +1,4 @@
 using GerenciadorDeProdutos.API.Configurations;
-using GerenciadorDeProdutos.Infrastructure.Data.Context;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,12 +15,6 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
-
-    using (var scope = app.Services.CreateScope())
-    {
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await InitialTableLoad.LoadAsync(context);
-    }
 }
 
 app.UseExceptionHandling();
