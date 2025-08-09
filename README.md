@@ -50,7 +50,7 @@ O backend processa requisições de produtos, aplica regras, acessa o banco de d
 **Criar tabelas e seed**
 ```bash
 dotnet tool install --global dotnet-ef
-dotnet ef database update --project GerenciadorDeProdutos.Infrastructure --startup-project GerenciadorDeProdutos.API
+dotnet ef database update --project .\GerenciadorDeProdutos.Repository\GerenciadorDeProdutos.Infrastructure.csproj --startup-project .\GerenciadorDeProdutos.API
 ```
 
 **Executar**
