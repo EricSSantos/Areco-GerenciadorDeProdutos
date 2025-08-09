@@ -57,7 +57,7 @@ dotnet ef database update --project .\GerenciadorDeProdutos.Repository\Gerenciad
 - **VS**: selecione perfil **DEV** ou **PROD** e pressione **F5**.
 - **CLI**:
 ```bash
-dotnet run --project GerenciadorDeProdutos.API
+dotnet run --project .\GerenciadorDeProdutos.API
 ```
 A API sobe em `http://localhost:5289` com Swagger.
 </details>
