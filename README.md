@@ -50,14 +50,14 @@ O backend processa requisições de produtos, aplica regras, acessa o banco de d
 **Criar tabelas e seed**
 ```bash
 dotnet tool install --global dotnet-ef
-dotnet ef database update --project GerenciadorDeProdutos.Infrastructure --startup-project GerenciadorDeProdutos.API
+dotnet ef database update --project .\GerenciadorDeProdutos.Repository\GerenciadorDeProdutos.Infrastructure.csproj --startup-project .\GerenciadorDeProdutos.API
 ```
 
 **Executar**
 - **VS**: selecione perfil **DEV** ou **PROD** e pressione **F5**.
 - **CLI**:
 ```bash
-dotnet run --project GerenciadorDeProdutos.API
+dotnet run --project .\GerenciadorDeProdutos.API
 ```
 A API sobe em `http://localhost:5289` com Swagger.
 </details>
