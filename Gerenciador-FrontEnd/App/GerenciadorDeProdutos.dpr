@@ -9,7 +9,8 @@ uses
   Produto in '..\Entities\Produto.pas',
   DateTimeUtils in '..\Utils\DateTimeUtils.pas',
   JsonUtils in '..\Utils\JsonUtils.pas',
-  FormatUtils in '..\Utils\FormatUtils.pas';
+  FormatUtils in '..\Utils\FormatUtils.pas',
+  uCadastro in '..\Forms\uCadastro.pas' {frmCadastroDeProduto};
 
 {$R *.res}
 
@@ -18,5 +19,6 @@ begin
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TfrmPrincipal, frmPrincipal);
   Application.CreateForm(TfrmProdutos, frmProdutos);
+  Application.CreateForm(TfrmCadastroDeProduto, frmCadastroDeProduto);
   Application.Run;
 end.

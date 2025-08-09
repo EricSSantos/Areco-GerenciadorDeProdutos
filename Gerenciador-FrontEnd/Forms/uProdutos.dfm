@@ -159,6 +159,7 @@ object frmProdutos: TfrmProdutos
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
+        OnClick = btnIncluirClick
       end
       object btnExcluir: TBitBtn
         Left = 183

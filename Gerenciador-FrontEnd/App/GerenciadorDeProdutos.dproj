@@ -137,6 +137,10 @@
         <DCCReference Include="..\Utils\DateTimeUtils.pas"/>
         <DCCReference Include="..\Utils\JsonUtils.pas"/>
         <DCCReference Include="..\Utils\FormatUtils.pas"/>
+        <DCCReference Include="..\Forms\uCadastro.pas">
+            <Form>frmCadastroDeProduto</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

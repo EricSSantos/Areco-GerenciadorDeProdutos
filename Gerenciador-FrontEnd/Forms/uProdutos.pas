@@ -54,16 +54,15 @@ type
     procedure DBGridKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure cdsProdutosAfterPost(DataSet: TDataSet);
     procedure cdsProdutosAfterDelete(DataSet: TDataSet);
+    procedure btnIncluirClick(Sender: TObject);
   private
     FId: TField;
     FCode, FStock: TIntegerField;
     FName, FDesc: TStringField;
     FPrice: TFloatField;
     FCreated, FUpdated: TDateTimeField;
-
     FSel: TBooleanField;
     FSelectedCount: Integer;
-
     procedure ConfigurarColunas;
     procedure MontarDataSet;
     procedure PreencherDataSet(const AArrayJson: TJSONArray);
@@ -71,6 +70,7 @@ type
     procedure AtualizarUI(AEditMode: Boolean);
     procedure LimparDados;
     function  RegistrosSelecionados: Integer; inline;
+    function ObterProdutos(const AMostrarErros: Boolean = True): Boolean;
     function  ObterIds: TArray<string>;
     function  Errors(const AErrors: TArray<string>): string;
   public
@@ -87,7 +87,8 @@ uses
   DateTimeUtils,
   JsonUtils,
   FormatUtils,
-  System.Generics.Collections;
+  System.Generics.Collections,
+  uCadastro;
 
 const
   CAMPO_SELECIONADO       = 'Selected';
@@ -168,68 +169,23 @@ begin
 end;
 
 procedure TfrmProdutos.btnBuscarClick(Sender: TObject);
-var
-  service: TApiService;
-  controller: TProdutosController;
-  resposta: TApiResponse;
-  json: TJSONValue;
-  arrayItens: TJSONArray;
-  detalhesErro: string;
 begin
-  Screen.Cursor := crHourGlass;
-  cdsProdutos.DisableControls;
-  cdsProdutos.LogChanges := False;
+  ObterProdutos;
+end;
+
+procedure TfrmProdutos.btnIncluirClick(Sender: TObject);
+var
+  Frm: TfrmCadastroDeProduto;
+begin
+  Frm := TfrmCadastroDeProduto.Create(Self);
   try
-    cdsProdutos.EmptyDataSet;
-    FSelectedCount := 0;
-
-    service := TApiService.Create;
-    controller := TProdutosController.Create(service);
-    try
-      resposta := controller.GetAll;
-      if not resposta.IsSuccess then
-      begin
-        detalhesErro := Errors(resposta.Errors);
-        if detalhesErro <> '' then
-          MessageDlg(MSG_CARREGAR_FALHA + sLineBreak + 'Detalhes: ' + detalhesErro, mtError, [mbOK], 0)
-        else if resposta.Title <> '' then
-          MessageDlg(MSG_CARREGAR_FALHA + sLineBreak + 'Detalhes: ' + resposta.Title, mtError, [mbOK], 0)
-        else
-          MessageDlg(MSG_CARREGAR_FALHA, mtError, [mbOK], 0);
-        Exit;
-      end;
-
-      json := JsonParse(resposta.Data);
-      try
-        arrayItens := nil;
-        if json is TJSONArray then
-          arrayItens := TJSONArray(json)
-        else if json is TJSONObject then
-          arrayItens := JsonGetArray(TJSONObject(json), 'items');
-
-        if not Assigned(arrayItens) then
-        begin
-          MessageDlg(MSG_RESPOSTA_INVALIDA, mtWarning, [mbOK], 0);
-          Exit;
-        end;
-
-        PreencherDataSet(arrayItens);
-        cdsProdutos.IndexFieldNames := 'Code';
-      finally
-        json.Free;
-      end;
-
-      AtualizarUI(True);
-
-    finally
-      controller.Free;
-      service.Free;
+    Frm.Position := poScreenCenter;
+    if Frm.ShowModal = mrOk then
+    begin
+      ObterProdutos;
     end;
-
   finally
-    cdsProdutos.LogChanges := True;
-    cdsProdutos.EnableControls;
-    Screen.Cursor := crDefault;
+    Frm.Free;
   end;
 end;
 
@@ -345,9 +301,7 @@ begin
               detalhes := resposta.Title;
 
             if dataSet.FindField('Code') <> nil then
-              codigoStr := dataSet.FieldByName('Code').AsString
-            else
-              codigoStr := '(s/ código)';
+              codigoStr := dataSet.FieldByName('Code').AsString;
 
             MessageDlg(Format(MSG_ATUALIZAR_FALHA, [codigoStr,
                  IfThen(detalhes <> '', detalhes, MSG_OPERACAO_FALHA)]), mtError, [mbOK], 0);
@@ -538,6 +492,82 @@ end;
 function TfrmProdutos.RegistrosSelecionados: Integer;
 begin
   Result := FSelectedCount;
+end;
+
+function TfrmProdutos.ObterProdutos(const AMostrarErros: Boolean): Boolean;
+var
+  service: TApiService;
+  controller: TProdutosController;
+  resposta: TApiResponse;
+  json: TJSONValue;
+  arrayItens: TJSONArray;
+  detalhesErro: string;
+begin
+  Result := False;
+
+  Screen.Cursor := crHourGlass;
+  cdsProdutos.DisableControls;
+  cdsProdutos.LogChanges := False;
+  try
+    cdsProdutos.EmptyDataSet;
+    FSelectedCount := 0;
+
+    service := TApiService.Create;
+    controller := TProdutosController.Create(service);
+    try
+      resposta := controller.GetAll;
+
+      if not resposta.IsSuccess then
+      begin
+        if AMostrarErros then
+        begin
+          detalhesErro := Errors(resposta.Errors);
+          if detalhesErro <> '' then
+            MessageDlg(MSG_CARREGAR_FALHA + sLineBreak + 'Detalhes: ' + detalhesErro, mtError, [mbOK], 0)
+          else if resposta.Title <> '' then
+            MessageDlg(MSG_CARREGAR_FALHA + sLineBreak + 'Detalhes: ' + resposta.Title, mtError, [mbOK], 0)
+          else
+            MessageDlg(MSG_CARREGAR_FALHA, mtError, [mbOK], 0);
+        end;
+        Exit;
+      end;
+
+      json := JsonParse(resposta.Data);
+      try
+        arrayItens := nil;
+
+        if json is TJSONArray then
+          arrayItens := TJSONArray(json)
+        else if json is TJSONObject then
+          arrayItens := JsonGetArray(TJSONObject(json), 'items');
+
+        if not Assigned(arrayItens) then
+        begin
+          if AMostrarErros then
+            MessageDlg(MSG_RESPOSTA_INVALIDA, mtWarning, [mbOK], 0);
+          Exit;
+        end;
+
+        PreencherDataSet(arrayItens);
+        cdsProdutos.IndexFieldNames := 'Code';
+
+        Result := True;
+      finally
+        json.Free;
+      end;
+
+      AtualizarUI(True);
+
+    finally
+      controller.Free;
+      service.Free;
+    end;
+
+  finally
+    cdsProdutos.LogChanges := True;
+    cdsProdutos.EnableControls;
+    Screen.Cursor := crDefault;
+  end;
 end;
 
 function TfrmProdutos.ObterIds: TArray<string>;
